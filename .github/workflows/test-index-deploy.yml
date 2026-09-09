@@ -1,0 +1,68 @@
+name: TEST — Copy index.html to domain-rag nginx
+
+# 테스트 전용 워크플로우. 기존 ci.yml / cd.yml 및 그 시크릿과 완전히 분리되어 있다.
+# main 의 index.html 하나만 domain-rag 테스트 서버의 nginx 디렉터리로 복사한다.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - ".github/workflows/test-index-deploy.yml"
+
+concurrency:
+  group: domain-rag-test-index
+  cancel-in-progress: true
+
+jobs:
+  copy-index:
+    name: Publish index.html
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    env:
+      # 이 워크플로우 전용 시크릿 (cd.yml 의 EC2_* 와 별개)
+      TEST_EC2_HOST: ${{ secrets.TEST_EC2_HOST }}
+      TEST_EC2_USER: ${{ secrets.TEST_EC2_USER }}
+      TEST_EC2_NGINX_DIR: ${{ secrets.TEST_EC2_NGINX_DIR }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure SSH key
+        env:
+          TEST_EC2_SSH_PRIVATE_KEY: ${{ secrets.TEST_EC2_SSH_PRIVATE_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$TEST_EC2_SSH_PRIVATE_KEY" > ~/.ssh/test_deploy_key
+          chmod 600 ~/.ssh/test_deploy_key
+          ssh-keyscan -H "$TEST_EC2_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Upload index.html
+        run: |
+          scp -i ~/.ssh/test_deploy_key \
+            index.html "$TEST_EC2_USER@$TEST_EC2_HOST:/tmp/test-index.html"
+
+      - name: Install into nginx directory
+        run: |
+          ssh -i ~/.ssh/test_deploy_key "$TEST_EC2_USER@$TEST_EC2_HOST" \
+            'bash -s' -- "$TEST_EC2_NGINX_DIR" <<'EOF'
+          set -euo pipefail
+          NGINX_DIR="$1"
+          mkdir -p "$NGINX_DIR"
+          install -m 644 /tmp/test-index.html "$NGINX_DIR/index.html"
+          rm -f /tmp/test-index.html
+          echo "--- $NGINX_DIR/index.html ---"
+          cat "$NGINX_DIR/index.html"
+          # 정적 파일 교체는 reload 불필요. nginx 가 systemd 서비스면 설정만 검증.
+          if systemctl is-active --quiet nginx; then
+            sudo nginx -t && sudo systemctl reload nginx
+          fi
+          EOF
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -f ~/.ssh/test_deploy_key
