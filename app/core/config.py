@@ -5,6 +5,9 @@ class Settings(BaseSettings):
     app_name: str = "Domain RAG MVP"
     app_env: str = "dev"
 
+    # FE/BE 분리 배포 시 허용할 프론트엔드 오리진 (쉼표 구분, "*" = 전체 허용)
+    cors_allow_origins: str = "*"
+
     qdrant_host: str = "localhost"
     qdrant_port: int = 6333
     qdrant_collection: str = "domain_docs"

@@ -9,6 +9,9 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="/static/style.css?v=20260906-wide-chart" />
   <link rel="stylesheet" href="/static/assets/simulation-workbench.css?v=20260905-1" />
+  <!-- FE/BE 분리: API 오리진 설정 + fetch 라우팅 (다른 스크립트보다 먼저) -->
+  <script>window.API_BASE_URL = window.API_BASE_URL || "";</script>
+  <script src="/static/config.js?v=20260910-fe-be-split"></script>
 </head>
 <body>
   <div class="offcanvas-backdrop" id="offcanvasBackdrop" aria-hidden="true"></div>

@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, Response
 from functools import lru_cache
@@ -28,6 +29,17 @@ import app.models.stock_price_history  # noqa: F401
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title=settings.app_name)
+
+# FE/BE 분리: 정적 호스팅(S3/CloudFront 등)에서 서빙되는 프론트엔드가
+# 다른 오리진의 이 API 를 호출할 수 있도록 CORS 를 연다.
+_cors_origins = [o.strip() for o in settings.cors_allow_origins.split(",") if o.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins or ["*"],
+    allow_credentials="*" not in _cors_origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 _HISTORIC_BOND_DETAIL_URL = "https://www.emuseum.go.kr/detail?relicId=PS0100202500100758500000"
 
