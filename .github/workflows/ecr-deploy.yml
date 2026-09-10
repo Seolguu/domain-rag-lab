@@ -1,0 +1,148 @@
+name: ECR — Build, Push & Deploy to EC2
+
+# 1) api/streamlit 이미지를 빌드해 ECR 로 push, base 이미지(postgres/redis/qdrant)는 ECR 로 미러링
+# 2) EC2(54.117.23.59)에 SSH 접속 → docker-compose.ecr.yml 로 ECR 이미지를 pull 해서 컨테이너 기동
+#
+# 필요한 GitHub Secrets:
+#   AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY  — ECR push 권한 (계정 312728688587)
+#   EC2_SSH_PRIVATE_KEY                        — domain-rag.pem 파일 전체 내용
+#   EC2_HOST                                   — 54.117.23.59
+#   EC2_USER                                   — ubuntu
+#   EC2_APP_DIR                                — /home/ubuntu/domain-rag-lab
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "frontend/**"
+      - "streamlit_app.py"
+      - "requirements.txt"
+      - "Dockerfile"
+      - "init.sql"
+      - "docker-compose.ecr.yml"
+      - ".github/workflows/ecr-deploy.yml"
+
+concurrency:
+  group: domain-rag-ecr-deploy
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ap-northeast-2
+
+jobs:
+  build-push:
+    name: Build & push images to ECR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      registry: ${{ steps.ecr.outputs.registry }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & push api (also tags streamlit)
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+        run: |
+          docker buildx build --platform linux/amd64 \
+            -t "$REGISTRY/domain-rag-lab-api:latest" \
+            -t "$REGISTRY/domain-rag-lab-api:${GITHUB_SHA::7}" \
+            --push .
+          docker buildx imagetools create \
+            -t "$REGISTRY/domain-rag-lab-streamlit:latest" \
+            "$REGISTRY/domain-rag-lab-api:latest"
+
+      - name: Mirror base images to ECR
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+        run: |
+          docker buildx imagetools create -t "$REGISTRY/domain-rag-lab-postgres:latest" docker.io/pgvector/pgvector:pg16
+          docker buildx imagetools create -t "$REGISTRY/domain-rag-lab-redis:latest"    docker.io/library/redis:7-alpine
+          docker buildx imagetools create -t "$REGISTRY/domain-rag-lab-qdrant:latest"   docker.io/qdrant/qdrant:v1.15.1
+
+  deploy:
+    name: Deploy ECR images to EC2
+    needs: build-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure SSH key
+        env:
+          EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$EC2_SSH_PRIVATE_KEY" > ~/.ssh/deploy.pem
+          chmod 600 ~/.ssh/deploy.pem
+          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Copy deploy files to EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_APP_DIR: ${{ secrets.EC2_APP_DIR }}
+        run: |
+          ssh -i ~/.ssh/deploy.pem "$EC2_USER@$EC2_HOST" "mkdir -p '$EC2_APP_DIR/data'"
+          scp -i ~/.ssh/deploy.pem \
+            docker-compose.ecr.yml init.sql .env.local.example \
+            "$EC2_USER@$EC2_HOST:$EC2_APP_DIR/"
+
+      - name: ECR login on EC2 (short-lived token from runner)
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          REGISTRY: ${{ needs.build-push.outputs.registry }}
+        run: |
+          aws ecr get-login-password --region "$AWS_REGION" \
+            | ssh -i ~/.ssh/deploy.pem "$EC2_USER@$EC2_HOST" \
+                "docker login --username AWS --password-stdin '$REGISTRY'"
+
+      - name: Pull from ECR & start stack
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_APP_DIR: ${{ secrets.EC2_APP_DIR }}
+          REGISTRY: ${{ needs.build-push.outputs.registry }}
+        run: |
+          ssh -i ~/.ssh/deploy.pem "$EC2_USER@$EC2_HOST" \
+            ECR_REGISTRY="$REGISTRY" APP_DIR="$EC2_APP_DIR" 'bash -s' <<'EOF'
+          set -euo pipefail
+          cd "$APP_DIR"
+          [ -f .env.local ] || cp .env.local.example .env.local
+          export ECR_REGISTRY
+          docker system prune -f >/dev/null 2>&1 || true
+          docker compose -f docker-compose.ecr.yml -p domain-rag-lab-ecr pull
+          docker compose -f docker-compose.ecr.yml -p domain-rag-lab-ecr up -d --remove-orphans
+          docker compose -f docker-compose.ecr.yml -p domain-rag-lab-ecr ps
+          curl --fail --silent --show-error --retry 18 --retry-delay 5 http://localhost/health && echo " OK"
+          EOF
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy.pem
