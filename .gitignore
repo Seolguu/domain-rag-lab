@@ -20,3 +20,9 @@ node_modules/
 
 DATA-ROOT/domain-rag-lab/
 domain-rag-lab/
+DATA-ROOT/
+data/chunks/
+docker-compose.ecr.yml
+docker-compose.override.yml
+scripts/chunk_dataset.py
+Dockerfile.postgres

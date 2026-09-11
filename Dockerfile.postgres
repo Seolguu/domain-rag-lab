@@ -1,4 +1,0 @@
-# init.sql 을 이미지에 구워 넣는다 (devcontainer→Docker Desktop 환경에서는
-# bind mount 가 불가하므로 docker-compose.override.yml 에서 이 이미지를 사용).
-FROM pgvector/pgvector:pg16
-COPY init.sql /docker-entrypoint-initdb.d/01-enable-pgvector.sql
