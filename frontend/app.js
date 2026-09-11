@@ -744,7 +744,7 @@ KOSDAQ|웹젠|게임`,
     $messages.innerHTML = `
       <article class="content-page">
         <header class="simulation-guide-head">
-          <div><div class="content-kicker">QUANT WORKBENCH</div><h1>퀀트 <mark>분석</mark></h1></div>
+          <div><div class="content-kicker">QUANT WORKBENCH</div><h1>퀀트 <mark>분석</mark></h1><span class="source-badge"><i class="fa-brands fa-github"></i> investment-analysis 이식</span></div>
           <p class="content-lead">몬테카를로 적립 시뮬레이션, VaR/CVaR 리스크, 이동평균 크로스오버 백테스트, 포트폴리오 최적화. 모든 수치는 교육용 가정입니다.</p>
         </header>
         <div class="quant-grid">
@@ -881,7 +881,7 @@ KOSDAQ|웹젠|게임`,
     $messages.innerHTML = `
       <article class="content-page">
         <header class="simulation-guide-head">
-          <div><div class="content-kicker">TAX SIMULATOR</div><h1>세금 <mark>시뮬레이션</mark></h1></div>
+          <div><div class="content-kicker">TAX SIMULATOR</div><h1>세금 <mark>시뮬레이션</mark></h1><span class="source-badge"><i class="fa-brands fa-github"></i> investment-analysis 이식</span></div>
           <p class="content-lead">거래내역(CSV/Excel)을 올리거나 샘플 데이터로 부가가치세·소득세·법인세를 추정합니다. 학습용 추정이며 실제 신고와 다를 수 있습니다.</p>
         </header>
         <div class="quant-card">
@@ -998,7 +998,7 @@ KOSDAQ|웹젠|게임`,
       $messages.innerHTML = `
         <article class="content-page">
           <header class="simulation-guide-head">
-            <div><div class="content-kicker">FINANCE QUIZ</div><h1>금융·경제 <mark>상식 퀴즈</mark></h1></div>
+            <div><div class="content-kicker">FINANCE QUIZ</div><h1>금융·경제 <mark>상식 퀴즈</mark></h1><span class="source-badge"><i class="fa-brands fa-github"></i> investment-analysis 이식</span></div>
             <p class="content-lead">주식·경제·재무제표·ETF 기초 ${_quiz.length}문항. 정답을 고르고 채점해 보세요.</p>
           </header>
           ${submitted ? `<div class="quiz-score">점수: <b>${score} / ${_quiz.length}</b> (${Math.round(score / _quiz.length * 100)}점)</div>` : ''}
@@ -1729,6 +1729,7 @@ KOSDAQ|웹젠|게임`,
   function renderHome() {
     $messages.innerHTML = `
       <article class="content-page home-page">
+        ${renderIntegrationBanner()}
         <div class="home-live-layout">
           <div class="home-live-assets">${renderDashboardAssetSection()}</div>
           <div class="home-live-chart">${renderTickChartSection()}</div>
@@ -1738,6 +1739,21 @@ KOSDAQ|웹젠|게임`,
     bindViewLinks();
     initDashboardAssets();
     initTickDashboard();
+  }
+
+  function renderIntegrationBanner() {
+    return `
+      <section class="integration-banner" aria-label="레포 통합 안내">
+        <div class="integration-banner-icon"><i class="fa-solid fa-code-merge"></i></div>
+        <div class="integration-banner-body">
+          <strong>domain-rag-lab</strong> + <strong>investment-analysis</strong> 두 웹앱을 통합했습니다.
+          <span class="integration-banner-detail">퀀트분석 · 세금계산 · 퀴즈는 investment-analysis에서 이식, 이자계산기는 AWS Lambda + API Gateway로 신규 추가했습니다.</span>
+        </div>
+        <div class="integration-banner-links">
+          <a href="https://github.com/Seolguu/domain-rag-lab" target="_blank" rel="noopener"><i class="fa-brands fa-github"></i> domain-rag-lab</a>
+          <a href="https://github.com/Seolguu/domain-rag-lab/tree/main/vendor/investment-analysis" target="_blank" rel="noopener"><i class="fa-brands fa-github"></i> investment-analysis</a>
+        </div>
+      </section>`;
   }
 
   function renderSimulationGuide() {
