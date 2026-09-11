@@ -373,14 +373,14 @@ body > nav {
   background: #fff;
   border: 1px solid #cbdcf5;
   border-radius: 50%;
-  font-size: 23px;
+  font-size: 24.15px;
   line-height: 1;
   cursor: pointer;
 }
 .glossary-modal__label {
   margin: 0 42px 6px 0;
   color: var(--app-blue);
-  font-size: 14.5px;
+  font-size: 15.225px;
   font-weight: 800;
   letter-spacing: 0.08em;
 }
@@ -390,21 +390,26 @@ body > nav {
 .glossary-modal h2 {
   margin: 0 48px 14px 0;
   color: var(--app-ink);
-  font-size: 25px;
+  font-size: 26.25px;
 }
 .glossary-modal__aliases {
   margin: 8px 0 18px;
   color: #59708f;
-  font-size: 16px;
+  font-size: 16.8px;
 }
 .glossary-modal__detail {
   margin: 0;
   color: #284b77;
-  font-size: 18.5px;
+  font-size: 19.425px;
   line-height: 1.8;
 }
 .glossary-modal__detail p { margin: 0 0 16px; }
 .glossary-modal__detail p:last-child { margin-bottom: 0; }
+.glossary-modal__detail h3 { margin: 22px 0 8px; color: var(--app-ink); font-size: 19.95px; line-height: 1.45; }
+.glossary-modal__detail h3:first-child { margin-top: 0; }
+.glossary-modal__detail ul,
+.glossary-modal__detail ol { margin: 0 0 16px; padding-left: 25px; }
+.glossary-modal__detail li + li { margin-top: 5px; }
 @media (max-width: 760px) {
   .glossary-modal { padding: 12px; }
   .glossary-modal .glossary-modal__dialog {
@@ -459,7 +464,7 @@ body > nav {
     padding: 25px 20px;
   }
   .glossary-modal h2 {
-    font-size: 22px;
+    font-size: 23.1px;
   }
 }
 

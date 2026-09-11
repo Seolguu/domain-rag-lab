@@ -35,6 +35,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://domain-rag-086015456585-ap-northeast-2.s3-website.ap-northeast-2.amazonaws.com",
+        "http://bb.edumgt.co.kr",
+        "https://www.edumgt.co.kr",
+        "http://www.edumgt.co.kr",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 _HISTORIC_BOND_DETAIL_URL = "https://www.emuseum.go.kr/detail?relicId=PS0100202500100758500000"
 
 

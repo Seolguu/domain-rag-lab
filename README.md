@@ -186,6 +186,16 @@ API_BASE_URL=http://localhost:8300 streamlit run streamlit_app.py
 docker compose exec api python -m app.ops.backfill_ohlcv
 ```
 
+### 02일차 ETF 탐색의 기간별 수익률
+
+02일차 학습 자료의 "국내 주요 운용사 전체 ETF 탐색"에서 "수익률 기간"을 3개월 외의 값(1개월·6개월·1년·직접 설정)으로 바꾸면, `/market/period-return` API가 매번 Yahoo Finance를 실시간 조회하는 대신 `stock_price_history`에 이미 저장된 값만 읽어 계산합니다. 이 테이블에 해당 ETF의 최근 1년치 데이터가 없으면 화면에 "1년 전 가져오기" 버튼이 나타나며, 클릭하면 `POST /market/period-return/extend`가 그 ETF 하나만 온디맨드로 Yahoo Finance에서 내려받아 저장한 뒤 다시 조회합니다.
+
+ETF 목록 전체의 최근 1년치를 미리 채워두려면 아래 백필 스크립트를 실행합니다. `frontend/days/assets/etf-catalog.json`의 ETF 코드를 그대로 읽어 채우므로, 개별 종목 백필과 별도로 한 번 더 실행해야 합니다.
+
+```bash
+docker compose exec api python -m app.ops.backfill_etf_ohlcv
+```
+
 ### 3. AWS EC2에서 실행 (Production)
 
 AWS 서버에서만 아래 명령을 실행합니다. 운영 Compose는 소스 바인드 마운트와 `--reload`를 쓰지 않고, PostgreSQL·Redis·Qdrant 포트를 외부에 노출하지 않습니다. 웹 트래픽은 Caddy가 FastAPI의 프론트엔드와 API로 전달합니다.

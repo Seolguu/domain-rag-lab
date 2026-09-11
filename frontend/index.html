@@ -242,9 +242,11 @@
     </section>
   </div>
 
-  <script src="/static/assets/theory-data.js?v=20260906-fx-forward-glossary"></script>
+  <!-- 같은 컨테이너가 프론트+API 를 함께 서빙하므로 same-origin("") 사용 -->
+  <script>window.API_BASE = window.API_BASE || '';</script>
+  <script src="/static/assets/theory-data.js?v=20260909-greek-letters"></script>
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@7.1.0"></script>
-  <script src="/static/app.js?v=20260911-merge3"></script>
+  <script src="/static/app.js?v=20260911-merge4"></script>
   <script src="/static/auth.js?v=20260905-gnb-unified"></script>
   <script src="/static/assets/modal-fit.js?v=20260905-simulator-specific-hints"></script>
   <script src="/static/assets/click-logger.js?v=20260905"></script>

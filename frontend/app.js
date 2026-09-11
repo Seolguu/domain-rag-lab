@@ -1,9 +1,29 @@
 (function () {
   'use strict';
 
+  const API_BASE = window.API_BASE || '';
+
+  function generateId() {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+      return window.crypto.randomUUID();
+    }
+    if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+      const bytes = window.crypto.getRandomValues(new Uint8Array(16));
+      bytes[6] = (bytes[6] & 0x0f) | 0x40;
+      bytes[8] = (bytes[8] & 0x3f) | 0x80;
+      const hex = [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
+      return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
+
   const state = {
     domain: 'finance',
-    sessionId: crypto.randomUUID(),
+    sessionId: generateId(),
     topK: 4,
     loading: false,
     chatHistory: [],
@@ -224,28 +244,24 @@
     { terms: ['차입금'], korean: '차입금', hanja: '借入金', abbr: 'Debt', english: 'Borrowings', summary: '기업이나 리츠가 은행·채권시장 등에서 빌린 돈입니다.', detail: '빚을 이용하면 투자 규모를 키울 수 있지만 이자와 상환 부담이 생깁니다. 금리가 오르거나 수입이 줄면 부담이 더 커질 수 있습니다.' },
     { terms: ['총보수'], korean: '총보수', hanja: '總報酬', abbr: 'TER', english: 'Total Expense Ratio', summary: '펀드·ETF를 운용하는 데 드는 연간 비용의 비율입니다.', detail: '보수는 보통 펀드 자산에서 조금씩 빠져나가므로 따로 청구서를 받지 않아도 수익률에 영향을 줍니다. 비슷한 상품끼리는 보수를 비교해 보세요.' },
     { terms: ['호가 스프레드', '호가 차이'], korean: '호가 스프레드', hanja: '呼價差', abbr: 'Spread', english: 'Bid-Ask Spread', summary: '살 수 있는 가장 싼 가격과 팔 수 있는 가장 비싼 가격의 차이입니다.', detail: '차이가 크면 사자마자 손해를 보고 시작하는 것처럼 느껴질 수 있습니다. 거래량이 적은 상품일수록 스프레드가 넓어질 수 있습니다.' },
-    { terms: ['연환산'], korean: '연환산', hanja: '年換算', abbr: 'Annualized', english: 'Annualized', summary: '한 달·몇 년 등 서로 다른 기간의 성과를 1년 기준으로 바꾸어 비교하는 방법입니다.', detail: '기간이 짧을수록 연환산 수치는 실제보다 크게 보일 수 있습니다. 달력일 단위 수익률·이자는 보통 365일(윤년 366일), 주식 일간 수익률·변동성은 약 252거래일을 기준으로 연환산합니다. 예금·채권은 상품 약관의 ACT/365·ACT/360 등 일수 계산 기준이 우선하므로, 원래 기간과 데이터 단위를 함께 확인해야 합니다.' },
+    { terms: ['연환산'], korean: '연환산', hanja: '年換算', abbr: 'Annualized', english: 'Annualized', summary: '기간이 다른 성과를 비교하려고, “이 수익 속도가 1년 내내 이어진다면?”이라고 가정해 1년 기준으로 바꾸는 계산입니다.', detail: '예를 들어 한 달 수익률을 1년 수익률처럼 바꿔 비교할 수 있습니다. 다만 며칠·몇 주처럼 기간이 아주 짧으면 연환산 수치가 실제보다 크게 보일 수 있으므로, 반드시 실제 투자 기간도 함께 보세요. 달력일 단위 수익률·이자는 보통 365일(윤년 366일), 주식 일간 수익률·변동성은 약 252거래일을 기준으로 연환산합니다. 예금·채권은 상품 약관의 ACT/365·ACT/360 등 일수 계산 기준이 우선합니다.' },
     { terms: ['무위험수익률'], korean: '무위험수익률', hanja: '無危險收益率', abbr: 'Rf', english: 'Risk-Free Rate', summary: '위험이 거의 없다고 가정한 투자에서 기대하는 기준 수익률입니다.', detail: '실제로 위험이 완전히 없는 투자는 드물지만, 성과를 비교할 때 기준점으로 사용합니다. 보통 단기 국채 수익률 등을 참고합니다.' },
   ];
 
-  const CALENDAR_EVENTS = [
-    { id: 'evt-us-nfp-aug', date: '2026-08-07', time: '한국시간 21:30(서머타임 기준)', category: 'macro', market: '미국', importance: 'high', title: '미국 7월 고용보고서(비농업 고용지수) 발표', summary: '미국 노동부가 7월 비농업 고용자 수, 실업률, 시간당 임금을 발표합니다.', detail: '고용지표는 미국 연준의 금리 결정에 큰 영향을 주는 자료 중 하나입니다. 고용이 예상보다 강하면 금리 인하 기대가 줄고, 예상보다 약하면 금리 인하 기대가 커지는 경향이 있어 국채금리·환율·주가지수 선물이 발표 직후 크게 움직일 수 있습니다. 숫자 하나만으로 방향을 단정하기보다 임금 상승률, 실업률 추세와 함께 확인하는 것이 좋습니다.' },
-    { id: 'evt-kr-kakao-q2', date: '2026-08-07', time: '오전 이사회 · 오후 컨퍼런스콜(예정)', category: 'earnings', market: '한국', importance: 'medium', title: '카카오 2026년 2분기 실적 발표(잠정)', summary: '카카오가 2분기 매출·영업이익 잠정 실적과 사업부문별 성과를 공개합니다.', detail: '플랫폼 기업의 실적 발표에서는 광고·커머스·콘텐츠 등 사업부문별 매출 구성과 수익성 추세를 함께 확인하는 것이 좋습니다. 잠정실적은 이후 사업보고서·분기보고서로 확정되므로, 공식 공시(전자공시시스템)에서 원문을 다시 확인하는 습관이 중요합니다.' },
-    { id: 'evt-us-cpi-aug', date: '2026-08-13', time: '한국시간 21:30(서머타임 기준)', category: 'macro', market: '미국', importance: 'high', title: '미국 7월 소비자물가지수(CPI) 발표', summary: '미국 노동통계국이 7월 CPI와 근원 CPI(식료품·에너지 제외) 상승률을 발표합니다.', detail: 'CPI는 인플레이션 흐름을 보여 주는 대표 지표로, 시장이 예상한 수치와 실제 발표치의 차이(서프라이즈)가 클수록 금리·환율·주가 변동성이 커질 수 있습니다. 전월 대비(MoM)와 전년 대비(YoY) 상승률을 함께 보고, 근원 CPI가 둔화 또는 재가속되는 추세인지 확인하세요.' },
-    { id: 'evt-kr-kospi-opt-aug', date: '2026-08-13', time: '장중 · 최종거래일', category: 'expiry', market: '한국', importance: 'medium', title: '코스피200 옵션 만기일(매월 둘째 목요일)', summary: '코스피200 옵션의 최종거래일로, 미결제약정 정리와 관련 헤지 주문이 늘어날 수 있습니다.', detail: '옵션 만기일에는 옵션 매도자였던 기관·금융기관이 델타 헤지 물량을 정리하면서 장 막판 수급이 평소보다 출렁일 수 있습니다. “만기일이라 무조건 오르내린다”고 단정하기보다, 미결제약정과 프로그램 매매 동향을 함께 참고 자료로만 확인하는 것이 좋습니다.' },
-    { id: 'evt-us-ppi-aug', date: '2026-08-14', time: '한국시간 21:30(서머타임 기준)', category: 'macro', market: '미국', importance: 'medium', title: '미국 7월 생산자물가지수(PPI) 발표', summary: '기업 간 거래 단계의 물가 변화를 보여 주는 PPI가 발표됩니다.', detail: 'PPI는 소비자물가(CPI)보다 한발 앞서 기업의 원가 압력을 보여 줄 수 있어 향후 CPI 흐름을 가늠하는 보조 지표로 활용됩니다. 에너지·식품처럼 변동성이 큰 항목을 제외한 근원 PPI를 함께 보면 추세를 판단하는 데 도움이 됩니다.' },
-    { id: 'evt-fomc-minutes-aug', date: '2026-08-19', time: '한국시간 새벽(서머타임 기준)', category: 'macro', market: '미국', importance: 'medium', title: 'FOMC 7월 정례회의 의사록 공개', summary: '지난 7월 연방공개시장위원회(FOMC) 회의의 세부 논의 내용이 공개됩니다.', detail: '의사록에는 위원들이 금리 결정 당시 어떤 위험 요인과 데이터를 근거로 판단했는지가 담겨 있어, 다음 회의의 방향을 가늠하는 참고 자료로 쓰입니다. 성명서만으로 알기 어려운 위원 간 견해 차이를 확인할 수 있지만, 이미 지난 회의의 기록이라는 점도 함께 감안해야 합니다.' },
-    { id: 'evt-jackson-hole', date: '2026-08-21', time: '현지시간 기준 3일간', category: 'macro', market: '미국', importance: 'high', title: '잭슨홀 경제정책 심포지엄 개막', summary: '미국 캔자스시티 연은이 주최하는 연례 경제정책 심포지엄으로, 연준 의장의 연설이 주목받습니다.', detail: '잭슨홀 심포지엄에서 연준 의장의 연설은 향후 통화정책 방향에 대한 힌트로 해석되는 경우가 많아 채권·주식·환율 시장이 민감하게 반응할 수 있습니다. 연설 하나로 다음 회의 결과가 확정되는 것은 아니므로, 이후 발표되는 경제지표와 함께 판단해야 합니다.' },
-    { id: 'evt-nvidia-q2', date: '2026-08-26', time: '한국시간 오전(장 마감 후 발표, 서머타임 기준)', category: 'earnings', market: '미국', importance: 'high', title: '엔비디아(NVIDIA) 2026 회계연도 2분기 실적 발표', summary: 'AI 반도체 수요와 데이터센터 매출 전망을 가늠할 수 있는 엔비디아의 분기 실적이 발표됩니다.', detail: '데이터센터 부문 매출 성장률, 차세대 GPU 공급 상황, 다음 분기 매출 가이던스가 특히 주목받습니다. 엔비디아 실적은 국내 반도체·서버 공급망 관련 기업들의 투자심리에도 영향을 줄 수 있어 국내 투자자도 참고하는 경우가 많습니다.' },
-    { id: 'evt-bok-rate-aug', date: '2026-08-28', time: '오전 9시 결정, 오전 통화정책방향 발표', category: 'macro', market: '한국', importance: 'high', title: '한국은행 금융통화위원회 기준금리 결정', summary: '한국은행 금통위가 기준금리 인상·인하·동결 여부를 결정하고 통화정책방향을 발표합니다.', detail: '기준금리는 예·적금 금리, 대출금리, 국고채 수익률과 채권형 상품 가격에 영향을 줄 수 있습니다. 결정 결과뿐 아니라 총재 기자간담회에서 나오는 향후 정책 방향에 대한 발언도 함께 확인하는 것이 좋습니다.' },
-    { id: 'evt-us-nfp-sep', date: '2026-09-04', time: '한국시간 21:30(서머타임 기준)', category: 'macro', market: '미국', importance: 'high', title: '미국 8월 고용보고서 발표', summary: '8월 비농업 고용자 수와 실업률이 발표됩니다.', detail: '9월 FOMC 회의를 앞두고 발표되는 고용지표라 시장의 금리 전망에 미치는 영향이 특히 클 수 있습니다. 전월 수치의 수정(리비전) 여부도 함께 확인하면 고용 흐름을 더 정확히 읽을 수 있습니다.' },
-    { id: 'evt-kospi-quad-sep', date: '2026-09-10', time: '장중 · 최종거래일', category: 'expiry', market: '한국', importance: 'high', title: '코스피200 선물·옵션 동시만기일(9월물, 분기 만기)', summary: '3·6·9·12월물 코스피200 선물이 옵션과 함께 만기를 맞는 분기 동시만기일입니다.', detail: '분기 동시만기일에는 선물·옵션 미결제약정 정리 물량이 한꺼번에 몰려 월간 만기보다 변동성이 커질 수 있습니다. 특히 장 마감 동시호가 구간에서 프로그램 매매(차익·비차익) 주문이 늘어나는 경향이 있어 참고 지표로만 활용하고 과도한 의미 부여는 주의해야 합니다.' },
-    { id: 'evt-us-cpi-sep', date: '2026-09-11', time: '한국시간 21:30(서머타임 기준)', category: 'macro', market: '미국', importance: 'high', title: '미국 8월 CPI 발표', summary: '9월 FOMC 직전 발표되는 마지막 주요 CPI 지표입니다.', detail: '이 지표는 FOMC의 금리 결정 직전에 나오는 만큼 시장의 민감도가 특히 높습니다. 헤드라인 CPI와 근원 CPI의 방향이 엇갈릴 경우 해석에 더 주의가 필요합니다.' },
-    { id: 'evt-fomc-sep', date: '2026-09-17', time: '한국시간 새벽(서머타임 기준)', category: 'macro', market: '미국', importance: 'high', title: 'FOMC 9월 정례회의 금리 결정 발표', summary: '연방공개시장위원회가 이틀간의 회의를 마치고 기준금리 결정과 경제전망(점도표)을 공개합니다.', detail: '금리 결정 자체뿐 아니라 위원들의 향후 금리 전망을 보여 주는 점도표(dot plot), 의장의 기자회견 발언이 시장에 큰 영향을 줄 수 있습니다. 결정 결과가 예상과 같아도 향후 전망 문구가 달라지면 시장이 반응할 수 있다는 점을 기억하세요.' },
-    { id: 'evt-triple-witching-sep', date: '2026-09-18', time: '현지시간 장 마감 동시호가', category: 'expiry', market: '미국', importance: 'high', title: "미국 증시 '네 마녀의 날'(주가지수 선물·옵션, 개별주식 선물·옵션 동시만기)", summary: '3·6·9·12월 셋째 금요일, 네 가지 파생상품 계약이 한꺼번에 만기를 맞아 거래량이 크게 늘어날 수 있습니다.', detail: '동시만기일에는 지수를 추종하는 기관의 리밸런싱 주문과 만기 청산 물량이 겹치면서 장 마감 무렵 변동성이 커지는 경향이 있습니다. 국내 코스피200 동시만기일과 마찬가지로, 특정 방향을 예단하기보다 거래량·변동성이 커질 수 있는 날로 이해하는 것이 좋습니다.' },
-    { id: 'evt-us-pce-sep', date: '2026-09-25', time: '한국시간 21:30(서머타임 기준)', category: 'macro', market: '미국', importance: 'medium', title: '미국 8월 근원 PCE 물가지수 발표', summary: '연준이 가장 중요하게 참고하는 물가지표인 근원 개인소비지출(PCE) 상승률이 발표됩니다.', detail: 'PCE는 CPI와 산출 방식이 달라 두 지표의 방향이 항상 일치하지는 않습니다. 연준이 정책 판단에서 PCE를 핵심 지표로 삼는다고 여러 차례 밝힌 만큼, CPI 발표 이후에도 PCE 결과를 다시 확인하는 습관이 필요합니다.' },
-    { id: 'evt-kr-samsung-q3-preview', date: '2026-10-08', time: '오전(예정)', category: 'earnings', market: '한국', importance: 'medium', title: '삼성전자 2026년 3분기 잠정실적 발표', summary: '삼성전자가 3분기 매출·영업이익 잠정치를 공개합니다.', detail: '잠정실적은 사업부문별 세부 수치 없이 매출·영업이익 총액만 먼저 공개되는 경우가 많습니다. 반도체(메모리·파운드리)와 디바이스 부문의 세부 실적은 이후 확정 실적 발표와 사업보고서에서 확인할 수 있습니다.' },
-  ];
+  let CALENDAR_EVENTS = [];
+  let calendarEventsLoaded = false;
+  let calendarEventsPromise = null;
+
+  function ensureCalendarEvents() {
+    if (calendarEventsLoaded) return Promise.resolve(CALENDAR_EVENTS);
+    if (!calendarEventsPromise) {
+      calendarEventsPromise = fetch(`${API_BASE}/market/calendar-events`)
+        .then(res => (res.ok ? res.json() : []))
+        .then(events => { CALENDAR_EVENTS = events; calendarEventsLoaded = true; return CALENDAR_EVENTS; })
+        .catch(() => { CALENDAR_EVENTS = []; return CALENDAR_EVENTS; });
+    }
+    return calendarEventsPromise;
+  }
 
   // 4일 × 40개: 시장 구분과 산업별로 읽는 국내 상장사 학습 아틀라스
   // 실시간 가격·투자의견이 아닌 사업 구조와 공시 확인 포인트를 위한 학습 데이터입니다.
@@ -638,7 +654,7 @@ KOSDAQ|웹젠|게임`,
 
   $clearChatBtn?.addEventListener('click', () => {
     state.chatHistory = [];
-    state.sessionId = crypto.randomUUID();
+    state.sessionId = generateId();
     $messages.innerHTML = '';
     updateRefPanel([]);
     showWelcome();
@@ -704,7 +720,7 @@ KOSDAQ|웹젠|게임`,
     }
     if (view === 'basis') renderBasisWorkflow();
     if (view === 'backtest') renderBacktestWorkflow();
-    if (view === 'calendar') renderCalendar();
+    if (view === 'calendar') renderCalendarView();
     if (view === 'quant') renderQuantView();
     if (view === 'tax') renderTaxView();
     if (view === 'quiz') renderQuizView();
@@ -1398,7 +1414,7 @@ KOSDAQ|웹젠|게임`,
     tickState.loading = true;
     if (!tickState.bars.length) renderTickDashboardFrame();
     try {
-      const response = await fetch(`/market/intraday?ticker=${encodeURIComponent(tickState.ticker)}&market=${encodeURIComponent(tickState.market)}`);
+      const response = await fetch(`${API_BASE}/market/intraday?ticker=${encodeURIComponent(tickState.ticker)}&market=${encodeURIComponent(tickState.market)}`);
       const payload = await response.json();
       if (requestedTicker !== tickState.ticker) return; // 응답이 오는 사이 다른 종목으로 전환된 경우 무시
       tickState.bars = payload.bars || [];
@@ -1422,7 +1438,7 @@ KOSDAQ|웹젠|게임`,
     tickState.beta = { loading: true };
     renderTickDashboardFrame();
     try {
-      const response = await fetch(`/market/beta?ticker=${encodeURIComponent(requestedTicker)}&market=${encodeURIComponent(requestedMarket)}`);
+      const response = await fetch(`${API_BASE}/market/beta?ticker=${encodeURIComponent(requestedTicker)}&market=${encodeURIComponent(requestedMarket)}`);
       const payload = await response.json();
       if (requestedTicker !== tickState.ticker || requestedMarket !== tickState.market) return;
       tickState.beta = {
@@ -1582,7 +1598,7 @@ KOSDAQ|웹젠|게임`,
   async function fetchDashboardAsset(asset) {
     dashboardState.items[asset.ticker] = { ...(dashboardState.items[asset.ticker] || {}), loading: true };
     try {
-      const response = await fetch(`/market/company?ticker=${encodeURIComponent(asset.ticker)}&market=${encodeURIComponent(asset.market)}&name=${encodeURIComponent(asset.name)}`);
+      const response = await fetch(`${API_BASE}/market/company?ticker=${encodeURIComponent(asset.ticker)}&market=${encodeURIComponent(asset.market)}&name=${encodeURIComponent(asset.name)}`);
       const payload = await response.json();
       dashboardState.items[asset.ticker] = { quote: payload.quote, error: payload.quote ? null : '시세 없음', loading: false };
     } catch (error) {
@@ -1946,7 +1962,7 @@ KOSDAQ|웹젠|게임`,
       start.setDate(start.getDate() - basisState.rangeDays + 1);
       end.setDate(end.getDate() + 1);
       const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      const response = await fetch(`/market/kospi200-history?start=${fmt(start)}&end=${fmt(end)}`);
+      const response = await fetch(`${API_BASE}/market/kospi200-history?start=${fmt(start)}&end=${fmt(end)}`);
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.detail || '요청 실패');
       if (requestId !== basisState.requestId) return;
@@ -2087,7 +2103,7 @@ KOSDAQ|웹젠|게임`,
     button.disabled = true; button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> LEAN 실행 중';
     result.innerHTML = '<div class="backtest-empty"><i class="fa-solid fa-spinner fa-spin"></i><p>yfinance 데이터를 정리하고 원격 LEAN 컨테이너를 실행하고 있습니다.</p></div>';
     try {
-      const response = await fetch('/backtests/run', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+      const response = await fetch(`${API_BASE}/backtests/run`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.detail || '백테스트를 실행하지 못했습니다.');
       result.innerHTML = `<div class="backtest-result-head"><span>${escHtml(data.engine)} · ${escHtml(data.strategy_label || '')}</span><h2>${escHtml(data.ticker)} 결과</h2></div>${buildBacktestSummary(data)}<div class="backtest-metrics"><article><span>전략 수익률</span><strong class="${data.strategy_return_pct >= 0 ? 'up' : 'down'}">${data.strategy_return_pct >= 0 ? '+' : ''}${data.strategy_return_pct}%</strong></article><article><span>연환산 수익률</span><strong class="${data.annualized_return_pct >= 0 ? 'up' : 'down'}">${data.annualized_return_pct >= 0 ? '+' : ''}${data.annualized_return_pct}%</strong></article><article><span>연환산 변동성</span><strong>${data.annualized_volatility_pct}%</strong></article><article><span>샤프 비율</span><strong>${data.sharpe_ratio}</strong></article><article><span>최대 낙폭</span><strong class="down">${data.max_drawdown_pct}%</strong></article><article><span>시장 노출 일수</span><strong>${data.invested_days_pct}%</strong></article><article><span>규칙 변경 횟수</span><strong>${data.trade_count}회</strong></article><article><span>단순 보유 수익률</span><strong class="${data.benchmark_return_pct >= 0 ? 'up' : 'down'}">${data.benchmark_return_pct >= 0 ? '+' : ''}${data.benchmark_return_pct}%</strong></article></div>${buildInvestmentChecklist(data)}<canvas id="backtestChart" width="900" height="250" aria-label="자산 곡선"></canvas><p class="backtest-disclaimer">${escHtml(data.disclaimer)}</p><details><summary>LEAN 실행 로그 보기</summary><pre>${escHtml(data.lean_log || '결과 로그 없음')}</pre></details>`;
@@ -2153,6 +2169,15 @@ KOSDAQ|웹젠|게임`,
       map[event.date].push(event);
     });
     return map;
+  }
+
+  function renderCalendarView() {
+    renderCalendar();
+    if (!calendarEventsLoaded) {
+      ensureCalendarEvents().then(() => {
+        if (state.activeView === 'calendar') renderCalendar();
+      });
+    }
   }
 
   function renderCalendar() {
@@ -2293,6 +2318,7 @@ KOSDAQ|웹젠|게임`,
         ${renderDay1ButlerContent(lesson.day)}
         ${dayVisual}
         ${learningVisual}
+        ${lesson.day === 4 ? renderGreekLettersGuide() : ''}
         ${renderExtendedDailyGuide(lesson.day)}
         ${lesson.day === 1 ? renderLendingFunnel() : ''}
         ${lesson.day === 1 ? renderAiHubRagCase() : ''}
@@ -2315,6 +2341,10 @@ KOSDAQ|웹젠|게임`,
       resizeInput();
       $questionInput.focus();
     });
+  }
+
+  function renderGreekLettersGuide() {
+    return `<section class="theory-lesson greek-letters-guide" aria-label="금융과 수학에서 자주 사용하는 주요 그리스 문자"><span>01</span><div class="theory-lesson-content"><h2>금융과 수학에서 자주 사용하는 주요 그리스 문자</h2><div class="theory-lesson-body"><p>금융과 수학에서 자주 사용하는 주요 그리스 문자를 정리해 드립니다.</p><p>수학에서는 <b>변수, 각도, 연산자</b>의 용도로, 금융(특히 옵션 투자의 위험 지표인 '파생상품 파생지수' 및 투자론)에서는 <b>리스크 및 변동성 측정</b> 용도로 주로 쓰입니다.</p><h3>1. 금융에서 쓰이는 주요 그리스 문자 (The Greeks)</h3><p>금융(특히 파생상품 옵션 거래)에서 그리스 문자는 '기초자산의 가격이나 조건이 변할 때 옵션 가격이 얼마나 변하는가'를 나타내는 감도 지표로 사용됩니다.</p><div class="lesson-table-wrap"><table class="lesson-table"><thead><tr><th>기호</th><th>이름</th><th>금융에서의 의미</th></tr></thead><tbody><tr><td><b>β</b></td><td><b>베타 (Beta)</b></td><td>시장 전체 대비 특정 주식의 <b>민감도(변동성)</b>. (예: β=1.5이면 시장보다 1.5배 더 등락)</td></tr><tr><td><b>α</b></td><td><b>알파 (Alpha)</b></td><td>시장 수익률(벤치마크)을 초과하는 <b>펀드매니저의 순수 초과 수익률</b>.</td></tr><tr><td><b>Δ, δ</b></td><td><b>델타 (Delta)</b></td><td>기초자산 가격이 1원 변할 때 <b>옵션 가격이 변하는 양</b>.</td></tr><tr><td><b>Γ, γ</b></td><td><b>감마 (Gamma)</b></td><td>기초자산 가격이 변할 때 <b>델타(Δ)가 변하는 비율</b> (델타의 변화율).</td></tr><tr><td><b>Θ, θ</b></td><td><b>세타 (Theta)</b></td><td>시간이 1일 지나갈 때 감소하는 <b>시간 가치 감소분</b> (시간에 따른 옵션 가격 변화).</td></tr><tr><td><b>𝒱</b></td><td><b>베가 (Vega)</b></td><td>기초자산의 변동성이 1% 변할 때 <b>옵션 가격의 변화량</b>. <i>(참고: 베가는 실제 그리스 문자가 아니지만 금융권에서 그리스 문자처럼 취급함)</i></td></tr><tr><td><b>ρ</b></td><td><b>로 (Rho)</b></td><td>이자율이 1% 변할 때 <b>옵션 가격의 변화량</b>.</td></tr></tbody></table></div><h3>2. 수학에서 쓰이는 주요 그리스 문자</h3><p>수학에서는 문자의 형태(대문자/소문자)에 따라 '연산자'나 '변수'로 역할을 나누어 사용합니다.</p><div class="lesson-table-wrap"><table class="lesson-table"><thead><tr><th>기호</th><th>이름</th><th>대문자 쓰임새</th><th>소문자 쓰임새</th></tr></thead><tbody><tr><td><b>Σ, σ</b></td><td><b>시그마 (Sigma)</b></td><td><b>Σ</b>: 총합(Summation) 연산자</td><td><b>σ</b>: 표준편차(Standard Deviation), 변수</td></tr><tr><td><b>Π, π</b></td><td><b>파이 (Pi)</b></td><td><b>Π</b>: 총곱(Product) 연산자</td><td><b>π</b>: 원주율 (3.14159…)</td></tr><tr><td><b>Δ, δ</b></td><td><b>델타 (Delta)</b></td><td><b>Δ</b>: 변화량(차이), 판별식</td><td><b>δ</b>: 아주 미세한 변화량 (미분/적분)</td></tr><tr><td><b>α, β, γ</b></td><td><b>알파/베타/감마</b></td><td>잘 쓰이지 않음 (알파벳 B, C 등과 유사)</td><td><b>α, β, γ</b>: 삼각형의 각도, 이차방정식의 해</td></tr><tr><td><b>μ</b></td><td><b>뮤 (Mu)</b></td><td>잘 쓰이지 않음</td><td><b>μ</b>: 확률과 통계에서의 <b>평균(Mean)</b></td></tr><tr><td><b>λ</b></td><td><b>람다 (Lambda)</b></td><td>잘 쓰이지 않음</td><td><b>λ</b>: 선형대수학의 <b>고유값(Eigenvalue)</b>, 확률론의 발생 비율</td></tr><tr><td><b>θ</b></td><td><b>세타 (Theta)</b></td><td>잘 쓰이지 않음</td><td><b>θ</b>: 삼각함수 및 미적분에서의 <b>미지의 각도</b></td></tr><tr><td><b>ε</b></td><td><b>엡실론 (Epsilon)</b></td><td>잘 쓰이지 않음</td><td><b>ε</b>: 오차항(Error), 임의의 아주 작은 양수</td></tr></tbody></table></div><h3>💡 한눈에 보는 핵심 요약</h3><ul><li><b>금융:</b> 주식에서는 α(초과 수익)와 β(시장 민감도)가 핵심이며, 옵션 거래에서는 Δ(가격), Γ(변화율), Θ(시간), 𝒱(변동성), ρ(금리)가 핵심 지표입니다.</li><li><b>수학:</b> 대문자(Σ, Π, Δ)는 묶어서 처리하는 <b>연산자나 전체 변화</b>를 뜻하고, 소문자(σ, π, θ, μ)는 <b>특정 수치, 각도, 통계량 변수</b>로 사용됩니다.</li></ul></div></div></section>`;
   }
 
   function renderStocksView(day = 1) {
@@ -2689,7 +2719,7 @@ effective_date: [기준일]
     document.body.classList.add('modal-open');
     modal.querySelectorAll('[data-atlas-close]').forEach(item => item.addEventListener('click', () => { modal.remove(); document.body.classList.remove('modal-open'); }));
     try {
-      const response = await fetch(`/market/company?ticker=${encodeURIComponent(company.ticker)}&market=${encodeURIComponent(company.market)}&name=${encodeURIComponent(company.name)}`);
+      const response = await fetch(`${API_BASE}/market/company?ticker=${encodeURIComponent(company.ticker)}&market=${encodeURIComponent(company.market)}&name=${encodeURIComponent(company.name)}`);
       if (!response.ok) throw new Error('market snapshot unavailable');
       const snapshot = await response.json();
       if (!document.body.contains(modal)) return;
@@ -2710,7 +2740,7 @@ effective_date: [기준일]
     let bars = null;
     let opened = false;
 
-    fetch(`/market/history?ticker=${encodeURIComponent(company.ticker)}&market=${encodeURIComponent(company.market)}`)
+    fetch(`${API_BASE}/market/history?ticker=${encodeURIComponent(company.ticker)}&market=${encodeURIComponent(company.market)}`)
       .then(response => response.ok ? response.json() : Promise.reject(new Error('history unavailable')))
       .then(data => {
         if (!document.body.contains(modal)) return;
@@ -2979,7 +3009,7 @@ effective_date: [기준일]
     setInputDisabled(true);
 
     try {
-      const res = await fetch('/chat', {
+      const res = await fetch(`${API_BASE}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -3094,7 +3124,7 @@ effective_date: [기준일]
     form.append('domain', state.domain);
 
     try {
-      const res = await fetch('/ingest/file', { method: 'POST', body: form });
+      const res = await fetch(`${API_BASE}/ingest/file`, { method: 'POST', body: form });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         showUploadStatus('error', `오류: ${err.detail || res.statusText}`);
@@ -3120,11 +3150,11 @@ effective_date: [기준일]
     showUploadStatus('loading', '등록 중…');
 
     try {
-      const res = await fetch('/ingest/text', {
+      const res = await fetch(`${API_BASE}/ingest/text`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          document_id: crypto.randomUUID(),
+          document_id: generateId(),
           title,
           content,
           domain: state.domain,

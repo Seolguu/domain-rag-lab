@@ -63,6 +63,9 @@
       weatherSimulator.dataset.ready = 'true';
     }
     addAfterText(target('위험을 읽는 네 가지 숫자'), `<figure class="concept-visual risk-dashboard"><p class="visual-kicker">RISK DASHBOARD · 같은 그래프, 서로 다른 질문</p><div class="metric-visual"><div class="metric-chart" aria-label="시작값 100에서 고점 120까지 오른 뒤 87로 하락하고 115로 마감한 예시 그래프"><svg viewBox="0 0 440 190" role="img" aria-hidden="true"><path d="M18 137 L72 105 L122 124 L174 47 L224 73 L274 154 L332 110 L385 30 L423 62 L423 164 L18 164 Z" fill="#315ff412"/><polyline points="18,137 72,105 122,124 174,47 224,73 274,154 332,110 385,30 423,62" fill="none" stroke="#315ff4" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><line x1="385" y1="30" x2="274" y2="154" stroke="#f06a67" stroke-width="3" stroke-dasharray="7 5"/><circle cx="18" cy="137" r="5" fill="#315ff4"/><circle cx="385" cy="30" r="6" fill="#f06a67"/><circle cx="274" cy="154" r="6" fill="#f06a67"/><circle cx="423" cy="62" r="5" fill="#10a36c"/><text x="16" y="184" fill="#63708a" font-size="14.5" font-weight="700">시작 100</text><text x="329" y="20" fill="#c53b35" font-size="14.5" font-weight="800">고점 120</text><text x="214" y="181" fill="#c53b35" font-size="14.5" font-weight="800">저점 87</text><text x="354" y="88" fill="#087a50" font-size="14.5" font-weight="800">마감 115</text></svg><span class="chart-callout volatility">파란 선의 들쭉날쭉함 = 변동성</span><span class="chart-callout drawdown">고점 120 → 저점 87 = MDD</span></div><div class="metric-legend"><span class="return"><i></i><b>수익률</b><small>시작 100 → 마감 115<br>결과는 <strong>+15%</strong></small></span><span class="volatility"><i></i><b>변동성</b><small>중간 과정에서 얼마나<br>자주·크게 흔들렸나</small></span><span class="drawdown"><i></i><b>MDD</b><small>고점 120 → 저점 87<br>가장 큰 하락은 <strong>−27.5%</strong></small></span><span class="sharpe"><i></i><b>샤프 비율</b><small>초과수익 ÷ 변동성<br>위험을 감안한 효율</small></span></div></div>${caption('네 숫자는 각각 다른 질문에 답합니다', '<b>수익률</b>은 최종 결과, <b>변동성</b>은 과정의 흔들림, <b>MDD</b>는 가장 아픈 하락, <b>샤프 비율</b>은 위험 대비 성과를 보여 줍니다.')}</figure>`);
+    const riskDashboard = document.querySelector('.risk-dashboard');
+    const sharpeFourPointExplanation = document.getElementById('sharpeFourPointExplanation');
+    if (riskDashboard && sharpeFourPointExplanation) riskDashboard.after(sharpeFourPointExplanation);
     const alphaBody = target('알파와 베타:')?.querySelector('.lesson-body');
     if (alphaBody && !document.getElementById('alphaBetaSimTrigger')) {
       alphaBody.insertAdjacentHTML('beforeend', `<p class="lesson-video-cta"><button type="button" class="lesson-video-link" id="alphaBetaSimTrigger"><i class="fa-solid fa-chart-simple"></i> 알파·베타 계산 시뮬레이터</button><small>시장 수익률과 베타, 실제 수익률을 바꿔 기대수익률과 알파를 비교해 보세요.</small></p>`);
@@ -84,10 +87,6 @@
     if (executionBody && !document.getElementById('citadelSecuritiesLink')) {
       executionBody.insertAdjacentHTML('beforeend', `<p class="lesson-video-cta"><a id="citadelSecuritiesLink" class="lesson-video-link" href="https://citadelsecurities.com/" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-arrow-up-right-from-square"></i> Citadel Securities 공식 홈페이지</a><a class="lesson-video-link" href="https://www.merrilllynch.com/" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-arrow-up-right-from-square"></i> Merrill 공식 홈페이지</a><small>사례의 대상 회사 소개를 확인하는 링크이며, 과거 제재 내용은 각 규제기관의 원문으로 별도 확인하세요.</small></p>`);
     }
-    const pairBody = target('벰버거의 페어 트레이딩:')?.querySelector('.lesson-body');
-    if (pairBody && !document.getElementById('pairTradingSimTrigger')) {
-      pairBody.insertAdjacentHTML('beforeend', `<p class="lesson-video-cta"><button type="button" class="lesson-video-link" id="pairTradingSimTrigger"><i class="fa-solid fa-code-branch"></i> 페어 트레이딩 시뮬레이터</button><small>두 가격의 간격과 Z-점수로 진입·청산 신호 및 롱·숏 손익을 살펴보세요.</small></p>`);
-    }
     if (!document.getElementById('koreanPairBreakTimeModal')) {
       document.body.insertAdjacentHTML('beforeend', `<div class="glossary-modal breaktime-modal" id="koreanPairBreakTimeModal" hidden><div class="glossary-modal__backdrop" data-korean-pair-breaktime-close></div><section class="glossary-modal__dialog breaktime-dialog" role="dialog" aria-modal="true" aria-labelledby="koreanPairBreakTimeTitle"><button class="glossary-modal__close" type="button" aria-label="닫기" data-korean-pair-breaktime-close>×</button><p class="glossary-modal__label">BREAKTIME · 확장 과제</p><h2 id="koreanPairBreakTimeTitle">다른 종목 페어도 비교해 보세요</h2><p>비교하려는 두 종목의 업종·사업 구조·거래량·공매도 가능 여부와 주요 이벤트를 먼저 찾아보세요. 단지 상관관계가 높다는 이유만으로 페어가 적합한 것은 아닙니다.</p><p><b>시스템 확장 과제:</b> 종목 선택 목록에 새 페어를 추가하고, 각 페어별 가격 데이터·비교 기간·진입 Z 기준·거래비용을 바꿔 결과를 비교해 보세요.</p><p><small>당일 종가로 신호를 만들었다면 다음 거래일 체결가로 검증하고, 수수료·세금·대차료·슬리피지와 표본 밖 기간을 함께 반영해야 합니다.</small></p></section></div>`);
     }
@@ -98,10 +97,6 @@
       koreanPairBreakTimeTrigger.addEventListener('click', () => { koreanPairBreakTimeModal.hidden = false; koreanPairBreakTimeModal.querySelector('.glossary-modal__close')?.focus(); });
       koreanPairBreakTimeModal.querySelectorAll('[data-korean-pair-breaktime-close]').forEach((element) => element.addEventListener('click', closeKoreanPairBreakTime));
       koreanPairBreakTimeTrigger.dataset.ready = 'true';
-    }
-    const koreanPairBody = target('국내 3개 페어로 보는 과거 신호')?.querySelector('.lesson-body');
-    if (koreanPairBody && !document.getElementById('koreanPairSimTrigger')) {
-      koreanPairBody.insertAdjacentHTML('beforeend', `<p class="lesson-video-cta"><button type="button" class="lesson-video-link" id="koreanPairSimTrigger"><i class="fa-solid fa-chart-line"></i> 국내 페어 신호 시뮬레이터</button><small>신호일 종가 → 다음 거래일 진입 → 청산/손절의 순서와 비용 차감 손익을 확인하세요.</small></p>`);
     }
     const spoofingBody = target('허수성 주문(스푸핑):')?.querySelector('.lesson-body');
     if (spoofingBody && !document.getElementById('spoofingOrderBookTrigger')) {

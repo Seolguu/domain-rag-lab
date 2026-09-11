@@ -11,12 +11,19 @@ import xml.etree.ElementTree as ET
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.stock_price_history import StockPriceHistory
+from app.services.market_calendar_data import CALENDAR_EVENTS
 
 router = APIRouter(prefix="/market", tags=["market"])
+
+
+@router.get("/calendar-events")
+async def calendar_events() -> list[dict[str, str]]:
+    return CALENDAR_EVENTS
 
 _cache: dict[str, tuple[datetime, dict[str, Any]]] = {}
 _ttl = timedelta(minutes=5)
@@ -421,6 +428,147 @@ async def market_beta(
 
     _beta_cache[cache_key] = (now, payload)
     return payload
+
+
+@router.get("/period-return")
+def period_return(
+    ticker: str = Query(pattern=r"^[0-9A-Z]{6}$"),
+    start: date = Query(description="조회 시작일(YYYY-MM-DD)"),
+    end: date = Query(description="조회 종료일(YYYY-MM-DD)"),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """Return the close-to-close return for a KRX ticker over a caller-chosen period, read only from PostgreSQL.
+
+    This never calls Yahoo Finance itself. It reads whatever ``stock_price_history``
+    already has for the ticker (populated by ``backfill_etf_ohlcv`` with roughly
+    the last year of daily bars), so the ETF explorer's period-return lookups
+    stay fast and don't hammer an external API on every keystroke or page turn.
+    When ``start`` falls before the earliest stored bar, this returns
+    ``reason: "needs_older_history"`` instead of an error so the frontend can
+    offer a "1년 전 가져오기" button that calls ``POST /period-return/extend``
+    to fetch just that older slice on demand.
+    """
+    if start >= end:
+        raise HTTPException(status_code=400, detail="시작일은 종료일보다 앞서야 합니다.")
+
+    rows = (
+        db.query(StockPriceHistory)
+        .filter(StockPriceHistory.ticker == ticker)
+        .order_by(StockPriceHistory.date.asc())
+        .all()
+    )
+    if not rows:
+        return {"available": False, "reason": "no_data", "ticker": ticker, "start": start.isoformat(), "end": end.isoformat()}
+
+    earliest_stored = rows[0].date
+    in_range = [row for row in rows if start <= row.date <= end]
+    if len(in_range) < 2:
+        reason = "needs_older_history" if start < earliest_stored else "insufficient_bars"
+        return {
+            "available": False,
+            "reason": reason,
+            "ticker": ticker,
+            "start": start.isoformat(),
+            "end": end.isoformat(),
+            "earliest_stored_date": earliest_stored.isoformat(),
+        }
+
+    start_bar, end_bar = in_range[0], in_range[-1]
+    return_pct = (float(end_bar.close) / float(start_bar.close) - 1) * 100
+    return {
+        "available": True,
+        "ticker": ticker,
+        "start_date": start_bar.date.isoformat(),
+        "end_date": end_bar.date.isoformat(),
+        "start_close": float(start_bar.close),
+        "end_close": float(end_bar.close),
+        "return_pct": round(return_pct, 2),
+        "bar_count": len(in_range),
+    }
+
+
+@router.post("/period-return/extend")
+async def extend_period_history(
+    ticker: str = Query(pattern=r"^[0-9A-Z]{6}$"),
+    start: date = Query(description="더 불러올 시작일(YYYY-MM-DD). 저장된 가장 이른 날짜보다 앞서야 합니다."),
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """On-demand fetch of daily bars older than the backfilled ~1 year, for a single ticker.
+
+    Triggered only when a learner explicitly clicks "1년 전 가져오기" for a
+    custom period that reaches further back than PostgreSQL currently has.
+    Fetches once from Yahoo Finance and upserts into ``stock_price_history``, so
+    the next ``/period-return`` call for this ticker (and any future request
+    covering this range) is served from PostgreSQL again, not live.
+    """
+    today = datetime.now(timezone.utc).date()
+    if start >= today:
+        raise HTTPException(status_code=400, detail="시작일은 오늘 이전이어야 합니다.")
+    if (today - start).days > 3650:
+        raise HTTPException(status_code=400, detail="최대 10년 이전까지만 불러올 수 있습니다.")
+
+    kst = timezone(timedelta(hours=9))
+    period1 = int(datetime.combine(start - timedelta(days=7), datetime.min.time(), tzinfo=kst).timestamp())
+    period2 = int(datetime.combine(today + timedelta(days=1), datetime.min.time(), tzinfo=kst).timestamp())
+
+    async def fetch_bars(symbol: str) -> list[dict[str, Any]]:
+        chart_url = f"https://query2.finance.yahoo.com/v8/finance/chart/{symbol}?period1={period1}&period2={period2}&interval=1d"
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+            response = await client.get(chart_url, headers={"User-Agent": "FinanceRagLab/1.0 (educational use)"})
+            response.raise_for_status()
+        result = response.json()["chart"]["result"][0]
+        timestamps = result.get("timestamp") or []
+        quote = result["indicators"]["quote"][0]
+        opens, highs = quote.get("open") or [], quote.get("high") or []
+        lows, closes = quote.get("low") or [], quote.get("close") or []
+        volumes = quote.get("volume") or []
+        bars: list[dict[str, Any]] = []
+        for i, ts in enumerate(timestamps):
+            o = opens[i] if i < len(opens) else None
+            h = highs[i] if i < len(highs) else None
+            l = lows[i] if i < len(lows) else None
+            c = closes[i] if i < len(closes) else None
+            if o is None or h is None or l is None or c is None:
+                continue
+            v = volumes[i] if i < len(volumes) and volumes[i] is not None else 0
+            bars.append({
+                "date": datetime.fromtimestamp(ts, tz=kst).date(),
+                "open": round(o, 2), "high": round(h, 2), "low": round(l, 2), "close": round(c, 2),
+                "volume": int(v),
+            })
+        return bars
+
+    bars: list[dict[str, Any]] = []
+    matched_market: str | None = None
+    for market_name, suffix in (("KOSPI", ".KS"), ("KOSDAQ", ".KQ")):
+        try:
+            candidate = await fetch_bars(f"{ticker}{suffix}")
+        except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError):
+            candidate = []
+        if len(candidate) >= 2:
+            bars, matched_market = candidate, market_name
+            break
+
+    if not bars:
+        raise HTTPException(status_code=502, detail="해당 기간의 과거 시세를 불러오지 못했습니다. 상장일 이후 기간인지 확인하세요.")
+
+    for bar in bars:
+        stmt = pg_insert(StockPriceHistory).values(ticker=ticker, market=matched_market, **bar)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["ticker", "market", "date"],
+            set_={"open": stmt.excluded.open, "high": stmt.excluded.high, "low": stmt.excluded.low, "close": stmt.excluded.close, "volume": stmt.excluded.volume},
+        )
+        db.execute(stmt)
+    db.commit()
+
+    earliest_date = min(bar["date"] for bar in bars)
+    return {
+        "ticker": ticker,
+        "market": matched_market,
+        "fetched_bars": len(bars),
+        "earliest_date": earliest_date.isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 async def _fetch_all(client: httpx.AsyncClient, chart_url: str, news_url: str) -> tuple[httpx.Response | Exception, httpx.Response | Exception]:
