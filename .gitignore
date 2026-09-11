@@ -18,4 +18,4 @@ node_modules/
 *.pem
 *.pdf
 
-DATA-ROOT/
+DATA-ROOT/domain-rag-lab/
