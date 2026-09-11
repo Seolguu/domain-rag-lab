@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/style.css?v=20260911-merge7" />
+  <link rel="stylesheet" href="/static/style.css?v=20260911-merge8" />
   <link rel="stylesheet" href="/static/assets/simulation-workbench.css?v=20260905-1" />
   <!-- HTTP(비보안 컨텍스트)에서 crypto.randomUUID 미지원 → 폴리필 (다른 스크립트보다 먼저) -->
   <script>
@@ -103,11 +103,15 @@
           <button class="brand-nav-btn" data-view="quant"><i class="fa-solid fa-flask"></i> 퀀트분석</button>
           <button class="brand-nav-btn" data-view="tax"><i class="fa-solid fa-receipt"></i> 세금계산</button>
           <button class="brand-nav-btn" data-view="interest"><i class="fa-solid fa-piggy-bank"></i> 이자계산기</button>
+          <button class="brand-nav-btn" data-view="portfolio"><i class="fa-solid fa-briefcase"></i> 내 포트폴리오</button>
+          <button class="brand-nav-btn" data-view="goal"><i class="fa-solid fa-bullseye"></i> 목표자금</button>
+          <button class="brand-nav-btn" data-view="fx"><i class="fa-solid fa-money-bill-transfer"></i> 환율</button>
           <button class="brand-nav-btn" data-view="simulation"><i class="fa-solid fa-chart-pie"></i> 시뮬레이션</button>
           <button class="brand-nav-btn" data-view="basis"><i class="fa-solid fa-scale-balanced"></i> 베이시스</button>
           <button class="brand-nav-btn" data-view="quiz"><i class="fa-solid fa-circle-question"></i> 퀴즈</button>
           <button class="brand-nav-btn" data-view="calendar"><i class="fa-solid fa-calendar-days"></i> 캘린더</button>
         </div>
+        <button class="auth-btn" id="authButton" type="button"><i class="fa-solid fa-user"></i> 로그인</button>
       </header>
 
       <div class="messages" id="messages">
@@ -246,7 +250,7 @@
   <script>window.API_BASE = window.API_BASE || '';</script>
   <script src="/static/assets/theory-data.js?v=20260909-greek-letters"></script>
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@7.1.0"></script>
-  <script src="/static/app.js?v=20260911-merge7"></script>
+  <script src="/static/app.js?v=20260911-merge8"></script>
   <script src="/static/auth.js?v=20260905-gnb-unified"></script>
   <script src="/static/assets/modal-fit.js?v=20260905-simulator-specific-hints"></script>
   <script src="/static/assets/click-logger.js?v=20260905"></script>

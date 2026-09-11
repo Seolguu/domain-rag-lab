@@ -13,12 +13,16 @@ from app.api.routes.market import router as market_router
 from app.api.routes.quant import router as quant_router
 from app.api.routes.tax import router as tax_router
 from app.api.routes.auth import router as auth_router
+from app.api.routes.portfolio import router as portfolio_router
+from app.api.routes.goal import router as goal_router
+from app.api.routes.fx import router as fx_router
 from app.core.config import settings
 from app.core.database import Base, engine
 
 # 모든 모델을 import해야 Base.metadata가 테이블을 인식함
 import app.models.user               # noqa: F401
 import app.models.stock_price_history  # noqa: F401
+import app.models.portfolio_holding  # noqa: F401
 
 Base.metadata.create_all(bind=engine)
 
@@ -94,6 +98,9 @@ app.include_router(market_router)
 app.include_router(quant_router)
 app.include_router(tax_router)
 app.include_router(auth_router)
+app.include_router(portfolio_router)
+app.include_router(goal_router)
+app.include_router(fx_router)
 
 # Serve frontend static files
 _frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend")

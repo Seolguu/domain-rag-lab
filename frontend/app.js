@@ -725,6 +725,9 @@ KOSDAQ|웹젠|게임`,
     if (view === 'tax') renderTaxView();
     if (view === 'quiz') renderQuizView();
     if (view === 'interest') renderInterestView();
+    if (view === 'portfolio') renderPortfolioView();
+    if (view === 'goal') renderGoalView();
+    if (view === 'fx') renderFxView();
   }
 
   // ─── 통합 추가 화면: 퀀트분석 · 세금계산 · 퀴즈 ──────────────────────────
@@ -1108,6 +1111,219 @@ KOSDAQ|웹젠|게임`,
             <div><span>세후 실효수익률</span><b>${d.aftertax_effective_return_percent}%</b></div>
           </div>
           <p class="quant-note">${escHtml(d.disclaimer)}</p>`;
+      } catch (e) {
+        out.innerHTML = `<p class="quant-error">오류: ${escHtml(e.message)}</p>`;
+      }
+    });
+  }
+
+  // ─── 본인 추가 신규 기능: 내 포트폴리오 · 목표자금 · 환율 ────────────────
+  function authToken() {
+    try { return localStorage.getItem('finance-rag-auth-token'); } catch (e) { return null; }
+  }
+  function authHeaders() {
+    return { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken()}` };
+  }
+
+  function renderPortfolioView() {
+    if (!authToken()) {
+      $messages.innerHTML = `
+        <article class="content-page">
+          <header class="simulation-guide-head">
+            <div><div class="content-kicker">MY PORTFOLIO</div><h1>내 <mark>포트폴리오</mark></h1></div>
+          </header>
+          <div class="auth-required-notice">
+            <i class="fa-solid fa-lock"></i>
+            로그인하면 본인이 보유한 종목을 등록하고 실시간 평가손익을 확인할 수 있습니다.
+            <div style="margin-top:16px"><button class="btn-primary" id="ptfLoginBtn">로그인 / 회원가입</button></div>
+          </div>
+        </article>`;
+      document.getElementById('ptfLoginBtn').addEventListener('click', () => document.getElementById('authButton').click());
+      return;
+    }
+
+    $messages.innerHTML = `
+      <article class="content-page">
+        <header class="simulation-guide-head">
+          <div><div class="content-kicker">MY PORTFOLIO</div><h1>내 <mark>포트폴리오</mark></h1></div>
+          <p class="content-lead">보유 종목을 등록하면 실시간 시세로 평가금액·손익을 계산합니다. 로그인 계정별로 개인 저장됩니다.</p>
+        </header>
+        <div class="quant-card">
+          <div class="quant-controls">
+            <label>종목코드(6자리)<input id="ptfTicker" placeholder="005930" maxlength="6"></label>
+            <label>시장<select id="ptfMarket"><option value="KOSPI">KOSPI</option><option value="KOSDAQ">KOSDAQ</option></select></label>
+            <label>종목명<input id="ptfName" placeholder="삼성전자" maxlength="80"></label>
+            <label>수량<input id="ptfQty" type="number" value="1" min="0.0001" step="1"></label>
+            <label>매입단가(원)<input id="ptfPrice" type="number" value="70000" min="1" step="100"></label>
+            <button class="btn-primary" id="ptfAddBtn">추가</button>
+          </div>
+          <p id="ptfStatus" class="tax-status"></p>
+          <div id="ptfOut" class="quant-out"></div>
+        </div>
+      </article>`;
+
+    const status = document.getElementById('ptfStatus');
+    const out = document.getElementById('ptfOut');
+
+    async function load() {
+      out.innerHTML = '<p class="quant-loading"><i class="fa-solid fa-spinner fa-spin"></i> 실시간 시세 불러오는 중…</p>';
+      try {
+        const res = await fetch('/portfolio/summary', { headers: authHeaders() });
+        if (res.status === 401) { out.innerHTML = '<p class="quant-error">로그인이 만료되었습니다. 다시 로그인해 주세요.</p>'; return; }
+        const d = await res.json();
+        if (!d.holdings.length) { out.innerHTML = '<p class="quant-note">등록된 보유 종목이 없습니다. 위에서 추가해 보세요.</p>'; return; }
+        out.innerHTML = `
+          <div class="quant-stats">
+            <div><span>총 매입금액</span><b>${wonFmt.format(d.total_cost)}원</b></div>
+            <div><span>총 평가금액</span><b>${wonFmt.format(d.total_value)}원</b></div>
+            <div><span>평가손익</span><b class="${d.total_pnl >= 0 ? 'pnl-pos' : 'pnl-neg'}">${d.total_pnl >= 0 ? '+' : ''}${wonFmt.format(d.total_pnl)}원 (${d.total_pnl_percent}%)</b></div>
+          </div>
+          <table class="holdings-table">
+            <thead><tr><th>종목</th><th>수량</th><th>매입가</th><th>현재가</th><th>평가금액</th><th>손익</th><th>비중</th><th></th></tr></thead>
+            <tbody>${d.holdings.map(h => `
+              <tr>
+                <td>${escHtml(h.name)}<br><small style="color:#94a3b8">${h.ticker} · ${h.market}</small></td>
+                <td>${h.quantity}</td>
+                <td>${wonFmt.format(h.buy_price)}</td>
+                <td>${h.price_available ? wonFmt.format(h.current_price) : '조회 실패'}</td>
+                <td>${wonFmt.format(h.value)}</td>
+                <td class="${h.pnl >= 0 ? 'pnl-pos' : 'pnl-neg'}">${h.pnl >= 0 ? '+' : ''}${wonFmt.format(h.pnl)} (${h.pnl_percent}%)</td>
+                <td>${h.weight_percent}%</td>
+                <td><button class="btn-ghost" data-del="${h.id}" title="삭제"><i class="fa-solid fa-trash"></i></button></td>
+              </tr>`).join('')}</tbody>
+          </table>`;
+        out.querySelectorAll('[data-del]').forEach(btn => btn.addEventListener('click', async () => {
+          await fetch(`/portfolio/holdings/${btn.dataset.del}`, { method: 'DELETE', headers: authHeaders() });
+          load();
+        }));
+      } catch (e) {
+        out.innerHTML = `<p class="quant-error">오류: ${escHtml(e.message)}</p>`;
+      }
+    }
+
+    document.getElementById('ptfAddBtn').addEventListener('click', async () => {
+      status.textContent = '';
+      const payload = {
+        ticker: document.getElementById('ptfTicker').value.trim(),
+        market: document.getElementById('ptfMarket').value,
+        name: document.getElementById('ptfName').value.trim(),
+        quantity: +document.getElementById('ptfQty').value,
+        buy_price: +document.getElementById('ptfPrice').value,
+      };
+      try {
+        const res = await fetch('/portfolio/holdings', { method: 'POST', headers: authHeaders(), body: JSON.stringify(payload) });
+        const d = await res.json();
+        if (!res.ok) throw new Error(typeof d.detail === 'string' ? d.detail : '입력값을 확인하세요.');
+        status.textContent = `${d.name} 추가됨`;
+        load();
+      } catch (e) { status.textContent = '오류: ' + e.message; }
+    });
+
+    load();
+  }
+
+  function renderGoalView() {
+    $messages.innerHTML = `
+      <article class="content-page">
+        <header class="simulation-guide-head">
+          <div><div class="content-kicker">GOAL PLANNER</div><h1>목표자금 <mark>계산기</mark></h1></div>
+          <p class="content-lead">은퇴자금·내집마련 등 목표 금액을 입력하면, 목표기간 안에 도달하는 데 필요한 월 적립액을 역산합니다.</p>
+        </header>
+        <div class="quant-card">
+          <div class="quant-controls">
+            <label>목표 금액(원)<input id="goalTarget" type="number" value="500000000" step="10000000"></label>
+            <label>목표 기간(년)<input id="goalYears" type="number" value="20" min="1" max="60"></label>
+            <label>예상 연수익률(%)<input id="goalRate" type="number" value="6" step="0.5" min="0" max="30"></label>
+            <label>현재 보유자금(원)<input id="goalCurrent" type="number" value="10000000" step="1000000"></label>
+            <button class="btn-primary" id="goalRun">계산</button>
+          </div>
+          <div id="goalOut" class="quant-out"></div>
+        </div>
+      </article>`;
+
+    document.getElementById('goalRun').addEventListener('click', async () => {
+      const out = document.getElementById('goalOut');
+      out.innerHTML = '<p class="quant-loading"><i class="fa-solid fa-spinner fa-spin"></i> 계산 중…</p>';
+      try {
+        const d = await postJson('/goal/required-savings', {
+          target_amount: +document.getElementById('goalTarget').value,
+          years: +document.getElementById('goalYears').value,
+          annual_return_percent: +document.getElementById('goalRate').value,
+          current_savings: +document.getElementById('goalCurrent').value,
+        });
+        out.innerHTML = `
+          <div class="quant-stats">
+            <div><span>필요 월 적립액</span><b>${wonFmt.format(d.required_monthly_savings)}원</b></div>
+            <div><span>총 납입 원금</span><b>${wonFmt.format(d.total_principal)}원</b></div>
+            <div><span>투자 수익분</span><b>${wonFmt.format(d.total_growth)}원</b></div>
+            <div><span>목표 금액</span><b>${wonFmt.format(d.target_amount)}원</b></div>
+          </div>
+          <table class="quant-table"><thead><tr><th>연차</th><th>예상 잔액</th></tr></thead><tbody>
+          ${d.timeline.map(p => `<tr><td>${p.year}년</td><td>${wonFmt.format(p.balance)}원</td></tr>`).join('')}
+          </tbody></table>
+          <p class="quant-note">${escHtml(d.disclaimer)}</p>`;
+      } catch (e) {
+        out.innerHTML = `<p class="quant-error">오류: ${escHtml(e.message)}</p>`;
+      }
+    });
+  }
+
+  function renderFxView() {
+    $messages.innerHTML = `
+      <article class="content-page">
+        <header class="simulation-guide-head">
+          <div><div class="content-kicker">FX CONVERTER</div><h1>환율 <mark>변환</mark></h1></div>
+          <p class="content-lead">ECB(유럽중앙은행) 공식 환율을 기준으로 변환하고 최근 추이를 확인합니다.</p>
+        </header>
+        <div class="quant-card">
+          <div class="quant-controls">
+            <label>보낼 통화<select id="fxFrom"><option value="USD">USD 미국 달러</option><option value="JPY">JPY 일본 엔</option><option value="EUR">EUR 유로</option><option value="CNY">CNY 중국 위안</option></select></label>
+            <label>받을 통화<select id="fxTo"><option value="KRW" selected>KRW 원화</option><option value="USD">USD 미국 달러</option></select></label>
+            <label>금액<input id="fxAmount" type="number" value="100" min="0.01" step="1"></label>
+            <button class="btn-primary" id="fxRun">변환</button>
+          </div>
+          <div id="fxOut" class="quant-out"></div>
+        </div>
+      </article>`;
+
+    document.getElementById('fxRun').addEventListener('click', async () => {
+      const out = document.getElementById('fxOut');
+      out.innerHTML = '<p class="quant-loading"><i class="fa-solid fa-spinner fa-spin"></i> 조회 중…</p>';
+      const from = document.getElementById('fxFrom').value;
+      const to = document.getElementById('fxTo').value;
+      const amount = +document.getElementById('fxAmount').value;
+      try {
+        const [rateRes, histRes] = await Promise.all([
+          fetch(`/fx/rate?from=${from}&to=${to}&amount=${amount}`),
+          fetch(`/fx/history?from=${from}&to=${to}&days=30`),
+        ]);
+        const rate = await rateRes.json();
+        if (!rateRes.ok) throw new Error(rate.detail || '환율 조회 실패');
+        const hist = await histRes.json();
+
+        let chart = '';
+        if (histRes.ok && hist.points.length > 1) {
+          const values = hist.points.map(p => p.rate);
+          const min = Math.min(...values), max = Math.max(...values);
+          const w = 600, h = 140, pad = 8;
+          const pts = values.map((v, i) => {
+            const x = pad + (i / (values.length - 1)) * (w - pad * 2);
+            const y = h - pad - ((v - min) / (max - min || 1)) * (h - pad * 2);
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+          }).join(' ');
+          chart = `<svg viewBox="0 0 ${w} ${h}" class="fx-chart" preserveAspectRatio="none">
+            <polyline points="${pts}" fill="none" stroke="#4f46e5" stroke-width="2"></polyline>
+          </svg>
+          <p class="quant-note">최근 ${hist.points.length}영업일 · 최저 ${min.toFixed(2)} · 최고 ${max.toFixed(2)}</p>`;
+        }
+
+        out.innerHTML = `
+          <div class="quant-stats">
+            <div><span>${from} → ${to}</span><b>1 ${from} = ${rate.rate} ${to}</b></div>
+            <div><span>${amount} ${from} 환산</span><b>${wonFmt.format(rate.converted)} ${to}</b></div>
+            <div><span>기준일</span><b>${rate.as_of}</b></div>
+          </div>
+          ${chart}`;
       } catch (e) {
         out.innerHTML = `<p class="quant-error">오류: ${escHtml(e.message)}</p>`;
       }
@@ -1770,6 +1986,9 @@ KOSDAQ|웹젠|게임`,
       { label: '세금계산', src: 'investment-analysis', view: 'tax' },
       { label: '퀴즈', src: 'investment-analysis', view: 'quiz' },
       { label: '이자계산기', src: 'AWS Lambda 신규', view: 'interest' },
+      { label: '내 포트폴리오', src: '본인 추가 신규', view: 'portfolio' },
+      { label: '목표자금', src: '본인 추가 신규', view: 'goal' },
+      { label: '환율', src: '본인 추가 신규', view: 'fx' },
       { label: '종목보기 · 시뮬레이션 · 베이시스 · 캘린더', src: 'domain-rag-lab', view: null },
     ];
     return `
@@ -1777,8 +1996,8 @@ KOSDAQ|웹젠|게임`,
         <div class="integration-banner-head">
           <div class="integration-banner-icon"><i class="fa-solid fa-code-merge"></i></div>
           <div>
-            <h2 class="integration-banner-title">두 웹앱을 하나로 통합했습니다</h2>
-            <p class="integration-banner-sub"><strong>domain-rag-lab</strong>(시장데이터·학습 플랫폼)을 베이스로, <strong>investment-analysis</strong>의 퀀트·세무 기능을 이식하고 <strong>AWS Lambda</strong> 서버리스 기능을 새로 추가했습니다.</p>
+            <h2 class="integration-banner-title">두 웹앱을 하나로 통합하고, 나만의 기능을 더했습니다</h2>
+            <p class="integration-banner-sub"><strong>domain-rag-lab</strong>(시장데이터·학습 플랫폼)을 베이스로 <strong>investment-analysis</strong>의 퀀트·세무 기능을 이식하고, <strong>AWS Lambda</strong> 서버리스 기능과 로그인 기반 <strong>내 포트폴리오·목표자금·환율</strong> 기능을 직접 추가했습니다.</p>
           </div>
         </div>
         <div class="integration-source-tags">
@@ -3378,7 +3597,7 @@ effective_date: [기준일]
 
   renderScenarioResult();
   const requestedView = new URLSearchParams(window.location.search).get('view');
-  const initialView = ['home', 'stocks', 'learn', 'simulation', 'basis', 'backtest', 'calendar', 'quant', 'tax', 'quiz', 'interest'].includes(requestedView)
+  const initialView = ['home', 'stocks', 'learn', 'simulation', 'basis', 'backtest', 'calendar', 'quant', 'tax', 'quiz', 'interest', 'portfolio', 'goal', 'fx'].includes(requestedView)
     ? requestedView
     : 'home';
   setView(initialView);
