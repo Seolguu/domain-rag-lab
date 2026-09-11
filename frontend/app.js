@@ -788,6 +788,14 @@ KOSDAQ|웹젠|게임`,
             </div>
             <div id="qPfOut" class="quant-out"></div>
           </section>
+          <section class="quant-card quant-card-wide">
+            <h3>⑤ 금융상품 이해 + 자산배분방법론 대시보드</h3>
+            <p class="quant-card-desc">주식/ETF·채권·파생상품·포트폴리오이론·자산배분모델(60/40·평균분산·블랙-리터만·Risk-Parity)을 한 화면에서 비교합니다.</p>
+            <div class="quant-controls">
+              <button class="btn-primary" id="qFkRun">대시보드 생성</button>
+            </div>
+            <div id="qFkOut" class="quant-out"></div>
+          </section>
         </div>
         <p class="content-disclaimer">학습용 시뮬레이션이며 특정 투자상품의 매수·매도를 권유하지 않습니다.</p>
       </article>`;
@@ -872,6 +880,21 @@ KOSDAQ|웹젠|게임`,
           ${Object.keys(d.optimal_weights).map(k => `<tr><td>${escHtml(k)}</td><td>${(d.optimal_weights[k] * 100).toFixed(1)}%</td><td>${(d.riskparity_weights[k] * 100).toFixed(1)}%</td></tr>`).join('')}
           </tbody></table>
           <img class="quant-img" src="${d.image}" alt="효율적 프론티어">`;
+      } catch (e) { fail(out, e); }
+    });
+
+    document.getElementById('qFkRun').addEventListener('click', async () => {
+      const out = document.getElementById('qFkOut'); busy(out, true);
+      try {
+        const d = await postJson('/quant/financial-knowledge', {});
+        const rows = Object.entries(d.strategies).map(([name, s]) => `
+          <tr><td>${escHtml(name)}</td><td>${(s.metrics.cagr * 100).toFixed(1)}%</td><td>${(s.metrics.volatility * 100).toFixed(1)}%</td>
+          <td>${(s.metrics.mdd * 100).toFixed(1)}%</td><td>${s.metrics.sharpe}</td><td>${s.metrics.sortino}</td></tr>`).join('');
+        out.innerHTML = `
+          <img class="quant-img" src="${d.image}" alt="금융상품 이해 대시보드">
+          <table class="quant-table"><thead><tr><th>전략</th><th>CAGR</th><th>변동성</th><th>MDD</th><th>Sharpe</th><th>Sortino</th></tr></thead><tbody>${rows}</tbody></table>
+          <h4 class="quant-subtitle">학습 커리큘럼</h4>
+          <table class="quant-table"><tbody>${d.curriculum.map(c => `<tr><td>${escHtml(c.title)}</td><td>${escHtml(c.practice)}</td></tr>`).join('')}</tbody></table>`;
       } catch (e) { fail(out, e); }
     });
   }
