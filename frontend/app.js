@@ -705,6 +705,302 @@ KOSDAQ|웹젠|게임`,
     if (view === 'basis') renderBasisWorkflow();
     if (view === 'backtest') renderBacktestWorkflow();
     if (view === 'calendar') renderCalendar();
+    if (view === 'quant') renderQuantView();
+    if (view === 'tax') renderTaxView();
+    if (view === 'quiz') renderQuizView();
+  }
+
+  // ─── 통합 추가 화면: 퀀트분석 · 세금계산 · 퀴즈 ──────────────────────────
+  const wonFmt = new Intl.NumberFormat('ko-KR');
+
+  async function postJson(url, body) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body || {}),
+    });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || `요청 실패 (${res.status})`);
+    return res.json();
+  }
+
+  function renderQuantView() {
+    $messages.innerHTML = `
+      <article class="content-page">
+        <header class="simulation-guide-head">
+          <div><div class="content-kicker">QUANT WORKBENCH</div><h1>퀀트 <mark>분석</mark></h1></div>
+          <p class="content-lead">몬테카를로 적립 시뮬레이션, VaR/CVaR 리스크, 이동평균 크로스오버 백테스트, 포트폴리오 최적화. 모든 수치는 교육용 가정입니다.</p>
+        </header>
+        <div class="quant-grid">
+          <section class="quant-card">
+            <h3>① 적립식 포트폴리오 시나리오</h3>
+            <div class="quant-controls">
+              <label>성향
+                <select id="qScProfile"><option value="stable">안정</option><option value="balanced" selected>균형</option><option value="growth">성장</option></select>
+              </label>
+              <label>초기금액(원)<input id="qScInit" type="number" value="10000000" step="1000000"></label>
+              <label>매월 적립(원)<input id="qScMonthly" type="number" value="500000" step="100000"></label>
+              <label>기간(년)<input id="qScYears" type="number" value="10" min="1" max="30"></label>
+              <button class="btn-primary" id="qScRun">실행</button>
+            </div>
+            <div id="qScOut" class="quant-out"></div>
+          </section>
+          <section class="quant-card">
+            <h3>② VaR / CVaR 리스크</h3>
+            <div class="quant-controls">
+              <label>신뢰수준<select id="qRiskConf"><option value="0.9">90%</option><option value="0.95" selected>95%</option><option value="0.99">99%</option></select></label>
+              <label>포트폴리오 가치(원)<input id="qRiskVal" type="number" value="100000000" step="10000000"></label>
+              <button class="btn-primary" id="qRiskRun">실행</button>
+            </div>
+            <div id="qRiskOut" class="quant-out"></div>
+          </section>
+          <section class="quant-card">
+            <h3>③ MA 크로스오버 백테스트</h3>
+            <div class="quant-controls">
+              <label>단기 MA<input id="qBtFast" type="number" value="20" min="5" max="60"></label>
+              <label>장기 MA<input id="qBtSlow" type="number" value="60" min="20" max="200"></label>
+              <label>거래일수<input id="qBtDays" type="number" value="1260" min="252" max="5040" step="252"></label>
+              <button class="btn-primary" id="qBtRun">실행</button>
+            </div>
+            <div id="qBtOut" class="quant-out"></div>
+          </section>
+          <section class="quant-card">
+            <h3>④ 포트폴리오 최적화 (효율적 프론티어)</h3>
+            <div class="quant-controls">
+              <label>무위험수익률<input id="qPfRf" type="number" value="0.03" step="0.005" min="0" max="0.1"></label>
+              <button class="btn-primary" id="qPfRun">실행</button>
+            </div>
+            <div id="qPfOut" class="quant-out"></div>
+          </section>
+        </div>
+        <p class="content-disclaimer">학습용 시뮬레이션이며 특정 투자상품의 매수·매도를 권유하지 않습니다.</p>
+      </article>`;
+
+    const busy = (el, on) => { el.innerHTML = on ? '<p class="quant-loading"><i class="fa-solid fa-spinner fa-spin"></i> 계산 중…</p>' : el.innerHTML; };
+    const fail = (el, e) => { el.innerHTML = `<p class="quant-error">오류: ${escHtml(e.message)}</p>`; };
+
+    document.getElementById('qScRun').addEventListener('click', async () => {
+      const out = document.getElementById('qScOut'); busy(out, true);
+      try {
+        const d = await postJson('/quant/portfolio-scenario', {
+          profile: document.getElementById('qScProfile').value,
+          initial_amount: +document.getElementById('qScInit').value,
+          monthly_amount: +document.getElementById('qScMonthly').value,
+          years: +document.getElementById('qScYears').value,
+        });
+        out.innerHTML = `
+          <div class="quant-stats">
+            <div><span>비관(10%)</span><b>${wonFmt.format(d.summary.cautious)}원</b></div>
+            <div><span>중앙(50%)</span><b>${wonFmt.format(d.summary.middle)}원</b></div>
+            <div><span>낙관(90%)</span><b>${wonFmt.format(d.summary.positive)}원</b></div>
+            <div><span>총 납입</span><b>${wonFmt.format(d.total_paid)}원</b></div>
+          </div>
+          <table class="quant-table"><thead><tr><th>연차</th><th>비관</th><th>중앙</th><th>낙관</th></tr></thead><tbody>
+          ${d.points.map(p => `<tr><td>${p.year}년</td><td>${wonFmt.format(p.cautious)}</td><td>${wonFmt.format(p.middle)}</td><td>${wonFmt.format(p.positive)}</td></tr>`).join('')}
+          </tbody></table>
+          <p class="quant-note">${escHtml(d.explanation)}</p>`;
+      } catch (e) { fail(out, e); }
+    });
+
+    document.getElementById('qRiskRun').addEventListener('click', async () => {
+      const out = document.getElementById('qRiskOut'); busy(out, true);
+      try {
+        const d = await postJson('/quant/risk', {
+          confidence: +document.getElementById('qRiskConf').value,
+          portfolio_value: +document.getElementById('qRiskVal').value,
+        });
+        out.innerHTML = `
+          <div class="quant-stats">
+            <div><span>VaR</span><b>${(d.var_pct * 100).toFixed(2)}% · ${wonFmt.format(d.var_amount)}원</b></div>
+            <div><span>CVaR</span><b>${(d.cvar_pct * 100).toFixed(2)}% · ${wonFmt.format(d.cvar_amount)}원</b></div>
+          </div>
+          <img class="quant-img" src="${d.image}" alt="VaR/CVaR 분포">`;
+      } catch (e) { fail(out, e); }
+    });
+
+    document.getElementById('qBtRun').addEventListener('click', async () => {
+      const out = document.getElementById('qBtOut'); busy(out, true);
+      try {
+        const d = await postJson('/quant/backtest', {
+          fast_ma: +document.getElementById('qBtFast').value,
+          slow_ma: +document.getElementById('qBtSlow').value,
+          n_days: +document.getElementById('qBtDays').value,
+        });
+        const m = d.metrics;
+        out.innerHTML = `
+          <div class="quant-stats">
+            <div><span>전략 수익률</span><b>${(m.total_return * 100).toFixed(1)}%</b></div>
+            <div><span>Buy&Hold</span><b>${(m.bh_return * 100).toFixed(1)}%</b></div>
+            <div><span>CAGR</span><b>${(m.cagr * 100).toFixed(2)}%</b></div>
+            <div><span>Sharpe</span><b>${m.sharpe}</b></div>
+            <div><span>MDD</span><b>${(m.mdd * 100).toFixed(1)}%</b></div>
+            <div><span>승률</span><b>${(m.win_rate * 100).toFixed(1)}%</b></div>
+            <div><span>손익비</span><b>${m.profit_factor}</b></div>
+            <div><span>거래횟수</span><b>${m.n_trades}회</b></div>
+          </div>
+          <img class="quant-img" src="${d.image}" alt="백테스트 결과">`;
+      } catch (e) { fail(out, e); }
+    });
+
+    document.getElementById('qPfRun').addEventListener('click', async () => {
+      const out = document.getElementById('qPfOut'); busy(out, true);
+      try {
+        const d = await postJson('/quant/portfolio', { risk_free: +document.getElementById('qPfRf').value });
+        out.innerHTML = `
+          <div class="quant-stats">
+            <div><span>기대수익률</span><b>${(d.optimal_return * 100).toFixed(1)}%</b></div>
+            <div><span>변동성</span><b>${(d.optimal_vol * 100).toFixed(1)}%</b></div>
+            <div><span>Sharpe</span><b>${d.optimal_sharpe}</b></div>
+          </div>
+          <table class="quant-table"><thead><tr><th>자산</th><th>최적 비중</th><th>Risk-Parity</th></tr></thead><tbody>
+          ${Object.keys(d.optimal_weights).map(k => `<tr><td>${escHtml(k)}</td><td>${(d.optimal_weights[k] * 100).toFixed(1)}%</td><td>${(d.riskparity_weights[k] * 100).toFixed(1)}%</td></tr>`).join('')}
+          </tbody></table>
+          <img class="quant-img" src="${d.image}" alt="효율적 프론티어">`;
+      } catch (e) { fail(out, e); }
+    });
+  }
+
+  let _taxTx = [];
+  function renderTaxView() {
+    $messages.innerHTML = `
+      <article class="content-page">
+        <header class="simulation-guide-head">
+          <div><div class="content-kicker">TAX SIMULATOR</div><h1>세금 <mark>시뮬레이션</mark></h1></div>
+          <p class="content-lead">거래내역(CSV/Excel)을 올리거나 샘플 데이터로 부가가치세·소득세·법인세를 추정합니다. 학습용 추정이며 실제 신고와 다를 수 있습니다.</p>
+        </header>
+        <div class="quant-card">
+          <div class="quant-controls">
+            <label>과세 유형<select id="txEntity"><option value="individual">개인(종합소득세)</option><option value="corporate">법인(법인세)</option></select></label>
+            <label>과세연도<input id="txYear" type="number" value="2024" min="2020" max="2030"></label>
+            <label>기본공제(원)<input id="txDeduct" type="number" value="0" step="1000000"></label>
+            <label class="tax-checkbox"><input id="txVat" type="checkbox" checked> 부가세 과세사업자</label>
+          </div>
+          <div class="quant-controls">
+            <input type="file" id="txFile" accept=".csv,.xlsx,.xls" hidden>
+            <button class="btn-secondary" id="txUploadBtn"><i class="fa-solid fa-upload"></i> 파일 업로드</button>
+            <button class="btn-secondary" id="txSampleBtn"><i class="fa-solid fa-flask"></i> 샘플 데이터</button>
+            <span id="txStatus" class="tax-status"></span>
+            <button class="btn-primary" id="txRunBtn" disabled>세금 계산</button>
+          </div>
+          <div id="txOut" class="quant-out"></div>
+        </div>
+      </article>`;
+
+    const status = document.getElementById('txStatus');
+    const runBtn = document.getElementById('txRunBtn');
+    const setTx = (txs, label) => {
+      _taxTx = txs || [];
+      status.textContent = `거래 ${_taxTx.length}건 · ${label}`;
+      runBtn.disabled = _taxTx.length === 0;
+    };
+
+    document.getElementById('txUploadBtn').addEventListener('click', () => document.getElementById('txFile').click());
+    document.getElementById('txFile').addEventListener('change', async (e) => {
+      const file = e.target.files[0]; if (!file) return;
+      status.textContent = '업로드 중…';
+      try {
+        const fd = new FormData(); fd.append('file', file);
+        const res = await fetch('/tax/upload', { method: 'POST', body: fd });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.detail || '업로드 실패');
+        setTx(d.transactions, file.name);
+      } catch (err) { status.textContent = '오류: ' + err.message; }
+      e.target.value = '';
+    });
+    document.getElementById('txSampleBtn').addEventListener('click', async () => {
+      status.textContent = '불러오는 중…';
+      try {
+        const res = await fetch('/tax/sample');
+        const d = await res.json();
+        setTx(d.transactions, '샘플 데이터');
+      } catch (err) { status.textContent = '오류: ' + err.message; }
+    });
+    runBtn.addEventListener('click', async () => {
+      const out = document.getElementById('txOut');
+      out.innerHTML = '<p class="quant-loading"><i class="fa-solid fa-spinner fa-spin"></i> 계산 중…</p>';
+      try {
+        const d = await postJson('/tax/simulate', {
+          transactions: _taxTx,
+          entity_type: document.getElementById('txEntity').value,
+          tax_year: +document.getElementById('txYear').value,
+          vat_registered: document.getElementById('txVat').checked,
+          standard_deduction: +document.getElementById('txDeduct').value,
+        });
+        const s = d.summary, v = d.vat, it = d.income_tax;
+        out.innerHTML = `
+          <div class="quant-stats">
+            <div><span>총수입</span><b>${wonFmt.format(Math.round(s.total_income))}원</b></div>
+            <div><span>총비용</span><b>${wonFmt.format(Math.round(s.total_expense))}원</b></div>
+            <div><span>순이익</span><b>${wonFmt.format(Math.round(s.net_income))}원</b></div>
+            <div><span>과세표준</span><b>${wonFmt.format(Math.round(s.taxable_income))}원</b></div>
+            <div><span>부가세 납부</span><b>${wonFmt.format(Math.round(v.payable))}원</b></div>
+            <div><span>${d.entity_type === 'individual' ? '소득세' : '법인세'}</span><b>${wonFmt.format(Math.round(it.amount))}원</b></div>
+            <div><span>지방소득세</span><b>${wonFmt.format(Math.round(it.local_tax))}원</b></div>
+            <div><span>총 세금</span><b>${wonFmt.format(Math.round(it.total))}원</b></div>
+            <div><span>실효세율</span><b>${it.effective_rate.toFixed(1)}%</b></div>
+          </div>
+          <h4 class="quant-subtitle">카테고리별 수입</h4>
+          <table class="quant-table"><tbody>${Object.entries(d.income_by_category).map(([k, val]) => `<tr><td>${escHtml(k)}</td><td>${wonFmt.format(Math.round(val))}원</td></tr>`).join('')}</tbody></table>
+          <h4 class="quant-subtitle">카테고리별 비용</h4>
+          <table class="quant-table"><tbody>${Object.entries(d.expense_by_category).map(([k, val]) => `<tr><td>${escHtml(k)}</td><td>${wonFmt.format(Math.round(val))}원</td></tr>`).join('')}</tbody></table>
+          ${it.brackets.length ? `<h4 class="quant-subtitle">소득세 구간</h4><table class="quant-table"><thead><tr><th>구간</th><th>세율</th><th>해당 금액</th></tr></thead><tbody>${it.brackets.map(b => `<tr><td>${escHtml(b.range)}</td><td>${b.rate}</td><td>${wonFmt.format(Math.round(b.amount))}원</td></tr>`).join('')}</tbody></table>` : ''}`;
+      } catch (e) { out.innerHTML = `<p class="quant-error">오류: ${escHtml(e.message)}</p>`; }
+    });
+  }
+
+  let _quiz = null;
+  async function renderQuizView() {
+    $messages.innerHTML = '<article class="content-page"><p class="quant-loading"><i class="fa-solid fa-spinner fa-spin"></i> 문제 불러오는 중…</p></article>';
+    if (!_quiz) {
+      try {
+        const res = await fetch('/static/assets/quiz-data.json');
+        _quiz = await res.json();
+      } catch (e) {
+        $messages.innerHTML = `<article class="content-page"><p class="quant-error">퀴즈 데이터를 불러오지 못했습니다: ${escHtml(e.message)}</p></article>`;
+        return;
+      }
+    }
+    const answers = {};
+    const draw = (submitted) => {
+      let score = 0;
+      const body = _quiz.map((q, i) => {
+        const picked = answers[i];
+        const correct = q.answer;
+        if (submitted && picked === correct) score++;
+        return `
+          <div class="quiz-q ${submitted ? (picked === correct ? 'ok' : 'no') : ''}">
+            <p class="quiz-q-title"><b>Q${i + 1}.</b> ${escHtml(q.question)} <span class="quiz-topic">${escHtml(q.topic)}</span></p>
+            <div class="quiz-choices">
+              ${q.choices.map((c, ci) => `
+                <label class="quiz-choice ${submitted && ci === correct ? 'answer' : ''} ${submitted && ci === picked && ci !== correct ? 'wrong' : ''}">
+                  <input type="radio" name="q${i}" value="${ci}" ${picked === ci ? 'checked' : ''} ${submitted ? 'disabled' : ''}> ${escHtml(c)}
+                </label>`).join('')}
+            </div>
+            ${submitted ? `<p class="quiz-exp"><i class="fa-solid fa-lightbulb"></i> ${escHtml(q.explanation)}</p>` : ''}
+          </div>`;
+      }).join('');
+      $messages.innerHTML = `
+        <article class="content-page">
+          <header class="simulation-guide-head">
+            <div><div class="content-kicker">FINANCE QUIZ</div><h1>금융·경제 <mark>상식 퀴즈</mark></h1></div>
+            <p class="content-lead">주식·경제·재무제표·ETF 기초 ${_quiz.length}문항. 정답을 고르고 채점해 보세요.</p>
+          </header>
+          ${submitted ? `<div class="quiz-score">점수: <b>${score} / ${_quiz.length}</b> (${Math.round(score / _quiz.length * 100)}점)</div>` : ''}
+          ${body}
+          <div class="quiz-actions">
+            ${submitted
+              ? '<button class="btn-primary" id="quizRetry">다시 풀기</button>'
+              : '<button class="btn-primary" id="quizSubmit">채점하기</button>'}
+          </div>
+        </article>`;
+      $messages.querySelectorAll('input[type=radio]').forEach(r => {
+        r.addEventListener('change', () => { answers[+r.name.slice(1)] = +r.value; });
+      });
+      const sb = document.getElementById('quizSubmit');
+      if (sb) sb.addEventListener('click', () => draw(true));
+      const rb = document.getElementById('quizRetry');
+      if (rb) rb.addEventListener('click', () => { for (const k in answers) delete answers[k]; draw(false); });
+    };
+    draw(false);
   }
 
   function togglePanel(panel) {
@@ -2930,7 +3226,7 @@ effective_date: [기준일]
 
   renderScenarioResult();
   const requestedView = new URLSearchParams(window.location.search).get('view');
-  const initialView = ['home', 'stocks', 'learn', 'simulation', 'basis', 'backtest', 'calendar'].includes(requestedView)
+  const initialView = ['home', 'stocks', 'learn', 'simulation', 'basis', 'backtest', 'calendar', 'quant', 'tax', 'quiz'].includes(requestedView)
     ? requestedView
     : 'home';
   setView(initialView);

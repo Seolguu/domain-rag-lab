@@ -8,27 +8,21 @@ from pathlib import Path
 import re
 import requests
 
-from pgvector.sqlalchemy import Vector  # noqa: F401 — SQLAlchemy type 등록
-
-from app.api.routes.chat import router as chat_router
 from app.api.routes.health import router as health_router
-from app.api.routes.ingest import router as ingest_router
 from app.api.routes.market import router as market_router
-from app.api.routes.backtest import router as backtest_router
+from app.api.routes.quant import router as quant_router
+from app.api.routes.tax import router as tax_router
 from app.api.routes.auth import router as auth_router
 from app.core.config import settings
 from app.core.database import Base, engine
 
 # 모든 모델을 import해야 Base.metadata가 테이블을 인식함
-import app.models.chat_log           # noqa: F401
-import app.models.document_chunk     # noqa: F401
-import app.models.long_term_memory   # noqa: F401
 import app.models.user               # noqa: F401
 import app.models.stock_price_history  # noqa: F401
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title=settings.app_name)
+app = FastAPI(title="금융·경제 인사이트 랩 API")
 
 # FE/BE 분리: 정적 호스팅(S3/CloudFront 등)에서 서빙되는 프론트엔드가
 # 다른 오리진의 이 API 를 호출할 수 있도록 CORS 를 연다.
@@ -83,11 +77,10 @@ async def prevent_frontend_cache(request: Request, call_next):
     return response
 
 app.include_router(health_router)
-app.include_router(ingest_router)
 app.include_router(market_router)
-app.include_router(backtest_router)
+app.include_router(quant_router)
+app.include_router(tax_router)
 app.include_router(auth_router)
-app.include_router(chat_router)
 
 # Serve frontend static files
 _frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend")

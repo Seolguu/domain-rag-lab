@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>금융상품·생활거래 RAG 학습랩</title>
+  <title>금융·경제 인사이트 랩</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/style.css?v=20260906-wide-chart" />
+  <link rel="stylesheet" href="/static/style.css?v=20260911-merge" />
   <link rel="stylesheet" href="/static/assets/simulation-workbench.css?v=20260905-1" />
   <!-- FE/BE 분리: API 오리진 설정 + fetch 라우팅 (다른 스크립트보다 먼저) -->
   <script>window.API_BASE_URL = window.API_BASE_URL || "";</script>
@@ -19,10 +19,10 @@
     <aside class="sidebar" id="learningPanel" aria-label="학습과 문서 등록">
       <div class="sidebar-header">
         <div class="panel-title-row">
-          <h1 class="logo"><i class="fa-solid fa-chart-pie"></i> Finance RAG Lab</h1>
+          <h1 class="logo"><i class="fa-solid fa-chart-pie"></i> 금융·경제 인사이트 랩</h1>
           <button class="panel-close" id="closeLeftPanel" aria-label="학습 패널 닫기"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <p class="logo-sub">금융상품 · 실물자산 · 생활거래 이해 · 실습</p>
+        <p class="logo-sub">시장 데이터 · 퀀트 분석 · 세금 시뮬레이션 · 금융 상식</p>
       </div>
 
       <nav class="topic-nav">
@@ -77,23 +77,24 @@
         <button class="panel-toggle" id="openLeftPanel" aria-controls="learningPanel" aria-label="학습 패널 열기">
           <i class="fa-solid fa-bars"></i><span>학습</span>
         </button>
-        <a class="main-kms-title" href="/?view=learn">금융과 행동</a>
-        <div class="brand-nav" aria-label="학습 서비스 메뉴">
+        <a class="main-kms-title" href="/?view=home">금융·경제 인사이트</a>
+        <div class="brand-nav" aria-label="서비스 메뉴">
           <button class="brand-nav-btn active" data-view="home"><i class="fa-solid fa-house"></i> 홈</button>
           <button class="brand-nav-btn" data-view="stocks"><i class="fa-solid fa-building-columns"></i> 종목보기</button>
-          <button class="brand-nav-btn" data-view="learn"><i class="fa-solid fa-comments"></i> RAG 질문</button>
+          <button class="brand-nav-btn" data-view="quant"><i class="fa-solid fa-flask"></i> 퀀트분석</button>
+          <button class="brand-nav-btn" data-view="tax"><i class="fa-solid fa-receipt"></i> 세금계산</button>
           <button class="brand-nav-btn" data-view="simulation"><i class="fa-solid fa-chart-pie"></i> 시뮬레이션</button>
           <button class="brand-nav-btn" data-view="basis"><i class="fa-solid fa-scale-balanced"></i> 베이시스</button>
-          <button class="brand-nav-btn" data-view="backtest"><i class="fa-solid fa-flask"></i> LEAN 백테스트</button>
+          <button class="brand-nav-btn" data-view="quiz"><i class="fa-solid fa-circle-question"></i> 퀴즈</button>
           <button class="brand-nav-btn" data-view="calendar"><i class="fa-solid fa-calendar-days"></i> 캘린더</button>
         </div>
       </header>
 
       <div class="messages" id="messages">
         <div class="welcome-msg">
-          <div class="welcome-icon"><i class="fa-solid fa-robot"></i></div>
-          <h2>금융상품·자산배분 RAG 학습랩</h2>
-          <p>4일 이론, 설명형 RAG 질문과 실습 시뮬레이션을 함께 활용해 보세요.</p>
+          <div class="welcome-icon"><i class="fa-solid fa-chart-line"></i></div>
+          <h2>금융·경제 인사이트 랩</h2>
+          <p>시장 데이터, 퀀트 분석, 세금 시뮬레이션, 금융 상식 퀴즈를 한곳에서.</p>
         </div>
       </div>
 
@@ -114,8 +115,8 @@
         </p>
       </div>
       <footer class="app-footer">
-        <span>© (주)에듀엠지티</span>
-        <span>금융상품·자산배분 학습 플랫폼</span>
+        <span>금융·경제 인사이트 랩</span>
+        <span>시장 데이터 · 퀀트 · 세금 · 금융 상식</span>
       </footer>
     </main>
 
@@ -223,7 +224,7 @@
 
   <script src="/static/assets/theory-data.js?v=20260906-fx-forward-glossary"></script>
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@7.1.0"></script>
-  <script src="/static/app.js?v=20260906-basis-upgrade"></script>
+  <script src="/static/app.js?v=20260911-merge"></script>
   <script src="/static/auth.js?v=20260905-gnb-unified"></script>
   <script src="/static/assets/modal-fit.js?v=20260905-simulator-specific-hints"></script>
   <script src="/static/assets/click-logger.js?v=20260905"></script>

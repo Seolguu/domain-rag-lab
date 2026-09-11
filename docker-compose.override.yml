@@ -1,0 +1,29 @@
+# devcontainer 안에서 host(Docker Desktop) 의 파일 공유가 안 되므로
+# docker-compose.yml 의 bind mount (./init.sql, ./app, ./frontend, ./data,
+# ./streamlit_app.py) 를 전부 제거하고, 코드는 이미지에 구워 넣은 것을 사용한다.
+# `docker compose up` 시 이 파일이 자동으로 병합된다.
+#
+# Mac 호스트에서 직접 실행할 때는 이 파일을 지우거나
+#   docker compose -f docker-compose.yml up
+# 로 override 를 건너뛰면 원래대로 live-reload bind mount 가 동작한다.
+
+services:
+  postgres:
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
+    image: domain-rag-lab-local-postgres
+    volumes: !override
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    # 코드는 이미지의 COPY 결과 사용. data 는 named volume 으로 업로드만 보존.
+    volumes: !override
+      - app_data:/app/data
+
+  streamlit:
+    # streamlit_app.py 는 Dockerfile 에서 COPY 하도록 수정됨.
+    volumes: !reset []
+
+volumes:
+  app_data:
