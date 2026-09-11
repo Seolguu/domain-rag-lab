@@ -617,6 +617,35 @@ KOSDAQ|웹젠|게임`,
     btn.addEventListener('click', () => setView(btn.dataset.view));
   });
 
+  // ─── 드롭다운 메뉴 그룹 (시장 데이터 / 퀀트·세무 / 학습) ─────────────────
+  const $navGroups = Array.from(document.querySelectorAll('.brand-nav-group'));
+  function closeAllNavDropdowns() {
+    $navGroups.forEach(group => {
+      group.querySelector('.brand-nav-dropdown')?.classList.remove('open');
+      group.querySelector('.brand-nav-trigger')?.classList.remove('open');
+    });
+  }
+  $navGroups.forEach(group => {
+    const trigger = group.querySelector('.brand-nav-trigger');
+    const dropdown = group.querySelector('.brand-nav-dropdown');
+    if (!trigger || !dropdown) return;
+    trigger.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const willOpen = !dropdown.classList.contains('open');
+      closeAllNavDropdowns();
+      if (willOpen) {
+        const rect = trigger.getBoundingClientRect();
+        dropdown.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - 260))}px`;
+        dropdown.style.top = `${rect.bottom + 6}px`;
+        dropdown.classList.add('open');
+        trigger.classList.add('open');
+      }
+    });
+    dropdown.querySelectorAll('button').forEach(btn => btn.addEventListener('click', closeAllNavDropdowns));
+  });
+  document.addEventListener('click', closeAllNavDropdowns);
+  window.addEventListener('resize', closeAllNavDropdowns);
+
   $openLeftPanel.addEventListener('click', () => togglePanel('left'));
   $openRightPanel?.addEventListener('click', () => togglePanel('right'));
   $closeLeftPanel.addEventListener('click', () => setPanel('left', false));
@@ -706,6 +735,9 @@ KOSDAQ|웹젠|게임`,
     stopDashboardAssets();
     state.activeView = view;
     $viewButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.view === view));
+    document.querySelectorAll('.brand-nav-group').forEach(group => {
+      group.classList.toggle('has-active', !!group.querySelector(`.brand-nav-btn[data-view="${view}"]`));
+    });
     $chatInputArea.classList.toggle('hidden', view !== 'learn');
     $clearChatBtn?.classList.toggle('hidden', view !== 'learn');
 
