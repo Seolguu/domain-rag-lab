@@ -4,10 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>금융·경제 인사이트 랩</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%232563eb'/%3E%3Cpath d='M20 70 L40 48 L55 60 L80 28' stroke='white' stroke-width='9' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='80' cy='28' r='7' fill='%2338bdf8'/%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/style.css?v=20260911-merge2" />
+  <link rel="stylesheet" href="/static/style.css?v=20260911-merge3" />
   <link rel="stylesheet" href="/static/assets/simulation-workbench.css?v=20260905-1" />
   <!-- HTTP(비보안 컨텍스트)에서 crypto.randomUUID 미지원 → 폴리필 (다른 스크립트보다 먼저) -->
   <script>
@@ -27,6 +28,8 @@
   </script>
   <!-- FE/BE 분리: API 오리진 설정 + fetch 라우팅 (다른 스크립트보다 먼저) -->
   <script>window.API_BASE_URL = window.API_BASE_URL || "";</script>
+  <!-- 이자계산기: Lambda + API Gateway HTTP API 엔드포인트 (배포 후 채움) -->
+  <script>window.LAMBDA_API_URL = window.LAMBDA_API_URL || "";</script>
   <script src="/static/config.js?v=20260910-fe-be-split"></script>
 </head>
 <body>
@@ -99,6 +102,7 @@
           <button class="brand-nav-btn" data-view="stocks"><i class="fa-solid fa-building-columns"></i> 종목보기</button>
           <button class="brand-nav-btn" data-view="quant"><i class="fa-solid fa-flask"></i> 퀀트분석</button>
           <button class="brand-nav-btn" data-view="tax"><i class="fa-solid fa-receipt"></i> 세금계산</button>
+          <button class="brand-nav-btn" data-view="interest"><i class="fa-solid fa-piggy-bank"></i> 이자계산기</button>
           <button class="brand-nav-btn" data-view="simulation"><i class="fa-solid fa-chart-pie"></i> 시뮬레이션</button>
           <button class="brand-nav-btn" data-view="basis"><i class="fa-solid fa-scale-balanced"></i> 베이시스</button>
           <button class="brand-nav-btn" data-view="quiz"><i class="fa-solid fa-circle-question"></i> 퀴즈</button>
@@ -240,7 +244,7 @@
 
   <script src="/static/assets/theory-data.js?v=20260906-fx-forward-glossary"></script>
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@7.1.0"></script>
-  <script src="/static/app.js?v=20260911-merge2"></script>
+  <script src="/static/app.js?v=20260911-merge3"></script>
   <script src="/static/auth.js?v=20260905-gnb-unified"></script>
   <script src="/static/assets/modal-fit.js?v=20260905-simulator-specific-hints"></script>
   <script src="/static/assets/click-logger.js?v=20260905"></script>

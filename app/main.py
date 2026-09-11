@@ -144,6 +144,21 @@ def read_learning_document(path: str):
         raise HTTPException(status_code=500, detail="학습 문서를 읽을 수 없습니다.") from error
 
 
+_FAVICON_SVG = (
+    b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>"
+    b"<rect width='100' height='100' rx='20' fill='#2563eb'/>"
+    b"<path d='M20 70 L40 48 L55 60 L80 28' stroke='white' stroke-width='9' fill='none'"
+    b" stroke-linecap='round' stroke-linejoin='round'/>"
+    b"<circle cx='80' cy='28' r='7' fill='#38bdf8'/></svg>"
+)
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    return Response(content=_FAVICON_SVG, media_type="image/svg+xml",
+                    headers={"Cache-Control": "public, max-age=86400"})
+
+
 if os.path.isdir(_frontend_dir):
     app.mount("/static", StaticFiles(directory=_frontend_dir), name="static")
 

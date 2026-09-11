@@ -708,6 +708,7 @@ KOSDAQ|웹젠|게임`,
     if (view === 'quant') renderQuantView();
     if (view === 'tax') renderTaxView();
     if (view === 'quiz') renderQuizView();
+    if (view === 'interest') renderInterestView();
   }
 
   // ─── 통합 추가 화면: 퀀트분석 · 세금계산 · 퀴즈 ──────────────────────────
@@ -1001,6 +1002,77 @@ KOSDAQ|웹젠|게임`,
       if (rb) rb.addEventListener('click', () => { for (const k in answers) delete answers[k]; draw(false); });
     };
     draw(false);
+  }
+
+  function renderInterestView() {
+    const lambdaUrl = (window.LAMBDA_API_URL || '').replace(/\/+$/, '');
+    $messages.innerHTML = `
+      <article class="content-page">
+        <header class="simulation-guide-head">
+          <div><div class="content-kicker">SERVERLESS · AWS LAMBDA</div><h1>예금·적금 <mark>이자 계산기</mark></h1></div>
+          <p class="content-lead">만기 수령액과 세후 이자를 계산합니다. 이 기능만 <b>AWS Lambda + API Gateway</b>로 분리된 서버리스 엔드포인트에서 처리됩니다. 이자소득세 15.4% 가정.</p>
+        </header>
+        <div class="quant-card">
+          <div class="quant-controls">
+            <label>상품
+              <select id="intProduct"><option value="deposit">예금(목돈 예치)</option><option value="savings">적금(매월 납입)</option></select>
+            </label>
+            <label id="intPrincipalWrap">예치 원금(원)<input id="intPrincipal" type="number" value="10000000" step="1000000"></label>
+            <label id="intMonthlyWrap" hidden>매월 납입액(원)<input id="intMonthly" type="number" value="500000" step="100000"></label>
+            <label>연이율(%)<input id="intRate" type="number" value="3.5" step="0.1" min="0" max="30"></label>
+            <label>기간(개월)<input id="intMonths" type="number" value="12" min="1" max="600"></label>
+            <label>이자 방식
+              <select id="intComp"><option value="compound">월복리</option><option value="simple">단리</option></select>
+            </label>
+            <button class="btn-primary" id="intRun">계산</button>
+          </div>
+          ${lambdaUrl ? `<p class="quant-note">엔드포인트: <code>${escHtml(lambdaUrl)}/interest</code></p>` : '<p class="quant-error">아직 Lambda 엔드포인트가 설정되지 않았습니다 (window.LAMBDA_API_URL).</p>'}
+          <div id="intOut" class="quant-out"></div>
+        </div>
+      </article>`;
+
+    const productSel = document.getElementById('intProduct');
+    const syncFields = () => {
+      const isSavings = productSel.value === 'savings';
+      document.getElementById('intPrincipalWrap').hidden = isSavings;
+      document.getElementById('intMonthlyWrap').hidden = !isSavings;
+    };
+    productSel.addEventListener('change', syncFields);
+    syncFields();
+
+    document.getElementById('intRun').addEventListener('click', async () => {
+      const out = document.getElementById('intOut');
+      if (!lambdaUrl) { out.innerHTML = '<p class="quant-error">Lambda 엔드포인트 미설정.</p>'; return; }
+      out.innerHTML = '<p class="quant-loading"><i class="fa-solid fa-spinner fa-spin"></i> 계산 중…</p>';
+      const product = productSel.value;
+      const body = {
+        product,
+        annual_rate: +document.getElementById('intRate').value,
+        months: +document.getElementById('intMonths').value,
+        compounding: document.getElementById('intComp').value,
+      };
+      if (product === 'savings') body.monthly_amount = +document.getElementById('intMonthly').value;
+      else body.principal = +document.getElementById('intPrincipal').value;
+      try {
+        const res = await fetch(lambdaUrl + '/interest', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+        });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.error || `요청 실패 (${res.status})`);
+        out.innerHTML = `
+          <div class="quant-stats">
+            <div><span>납입 원금</span><b>${wonFmt.format(d.principal)}원</b></div>
+            <div><span>세전 이자</span><b>${wonFmt.format(d.pretax_interest)}원</b></div>
+            <div><span>이자소득세(${d.tax_rate_percent}%)</span><b>−${wonFmt.format(d.tax)}원</b></div>
+            <div><span>세후 이자</span><b>${wonFmt.format(d.aftertax_interest)}원</b></div>
+            <div><span>만기 수령액</span><b>${wonFmt.format(d.maturity_amount)}원</b></div>
+            <div><span>세후 실효수익률</span><b>${d.aftertax_effective_return_percent}%</b></div>
+          </div>
+          <p class="quant-note">${escHtml(d.disclaimer)}</p>`;
+      } catch (e) {
+        out.innerHTML = `<p class="quant-error">오류: ${escHtml(e.message)}</p>`;
+      }
+    });
   }
 
   function togglePanel(panel) {
@@ -3226,7 +3298,7 @@ effective_date: [기준일]
 
   renderScenarioResult();
   const requestedView = new URLSearchParams(window.location.search).get('view');
-  const initialView = ['home', 'stocks', 'learn', 'simulation', 'basis', 'backtest', 'calendar', 'quant', 'tax', 'quiz'].includes(requestedView)
+  const initialView = ['home', 'stocks', 'learn', 'simulation', 'basis', 'backtest', 'calendar', 'quant', 'tax', 'quiz', 'interest'].includes(requestedView)
     ? requestedView
     : 'home';
   setView(initialView);
