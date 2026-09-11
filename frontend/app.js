@@ -1765,16 +1765,27 @@ KOSDAQ|웹젠|게임`,
   }
 
   function renderIntegrationBanner() {
+    const sourceTags = [
+      { label: '퀀트분석', src: 'investment-analysis', view: 'quant' },
+      { label: '세금계산', src: 'investment-analysis', view: 'tax' },
+      { label: '퀴즈', src: 'investment-analysis', view: 'quiz' },
+      { label: '이자계산기', src: 'AWS Lambda 신규', view: 'interest' },
+      { label: '종목보기 · 시뮬레이션 · 베이시스 · 캘린더', src: 'domain-rag-lab', view: null },
+    ];
     return `
       <section class="integration-banner" aria-label="레포 통합 안내">
-        <div class="integration-banner-icon"><i class="fa-solid fa-code-merge"></i></div>
-        <div class="integration-banner-body">
-          <strong>domain-rag-lab</strong> + <strong>investment-analysis</strong> 두 웹앱을 통합했습니다.
-          <span class="integration-banner-detail">퀀트분석 · 세금계산 · 퀴즈는 investment-analysis에서 이식, 이자계산기는 AWS Lambda + API Gateway로 신규 추가했습니다.</span>
+        <div class="integration-banner-head">
+          <div class="integration-banner-icon"><i class="fa-solid fa-code-merge"></i></div>
+          <div>
+            <h2 class="integration-banner-title">두 웹앱을 하나로 통합했습니다</h2>
+            <p class="integration-banner-sub"><strong>domain-rag-lab</strong>(시장데이터·학습 플랫폼)을 베이스로, <strong>investment-analysis</strong>의 퀀트·세무 기능을 이식하고 <strong>AWS Lambda</strong> 서버리스 기능을 새로 추가했습니다.</p>
+          </div>
         </div>
-        <div class="integration-banner-links">
-          <a href="https://github.com/Seolguu/domain-rag-lab" target="_blank" rel="noopener"><i class="fa-brands fa-github"></i> domain-rag-lab</a>
-          <a href="https://github.com/Seolguu/domain-rag-lab/tree/main/vendor/investment-analysis" target="_blank" rel="noopener"><i class="fa-brands fa-github"></i> investment-analysis</a>
+        <div class="integration-source-tags">
+          ${sourceTags.map(t => `
+            <span class="integration-tag ${t.view ? 'is-clickable' : ''}" ${t.view ? `data-go="${t.view}"` : ''}>
+              <b>${escHtml(t.label)}</b><small>${escHtml(t.src)}</small>
+            </span>`).join('')}
         </div>
       </section>`;
   }
