@@ -33,7 +33,12 @@ def current_user(authorization: str | None = Header(default=None), db: Session =
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="로그인이 필요합니다.")
     session = db.query(UserSession).filter(UserSession.token == authorization[7:]).first()
-    if not session or session.expires_at < datetime.now(timezone.utc):
+    if session is not None:
+        expires_at = session.expires_at
+        # SQLite 등 tz 를 저장하지 않는 백엔드에서 돌아온 naive datetime 을 UTC 로 간주한다.
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if not session or expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="로그인 세션이 만료되었습니다.")
     user = db.get(User, session.user_id)
     if not user:

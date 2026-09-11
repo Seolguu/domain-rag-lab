@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     postgres_user: str = "raguser"
     postgres_password: str = "ragpass"
 
+    # 명시적으로 지정하면 Postgres 설정을 무시하고 이 URL 을 그대로 사용한다.
+    # 소형 인스턴스 단독 배포에서는 sqlite:////app/data/app.db 처럼 SQLite 로 둔다.
+    database_url_override: str = ""
+
     redis_host: str = "localhost"
     redis_port: int = 6379
 
@@ -53,6 +57,8 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
+        if self.database_url_override:
+            return self.database_url_override
         return (
             f"postgresql+psycopg2://{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"

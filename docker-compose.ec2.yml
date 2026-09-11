@@ -1,0 +1,26 @@
+# EC2(t3.micro) 단독 배포: 로컬 로드된 이미지 + SQLite. Postgres 컨테이너 없음.
+#   docker load -i fil.tar && docker tag <id> finance-insight-lab:latest
+#   docker compose up -d
+name: finance-insight-lab
+
+services:
+  api:
+    image: finance-insight-lab:latest
+    pull_policy: never
+    ports:
+      - "80:8000"
+    environment:
+      DATABASE_URL_OVERRIDE: "sqlite:////app/data/app.db"
+      CORS_ALLOW_ORIGINS: "*"
+    volumes:
+      - app_data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  app_data:
