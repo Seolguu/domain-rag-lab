@@ -1,0 +1,17 @@
+/venv
+/.venv
+*.key
+*.log
+*.env
+__pycache__/
+.claude/
+.venv/
+play**/
+*.csv
+
+DATA-ROOT/
+data/
+
+**/테스트*
+**/test*.zip
+**/*.zip
