@@ -26,7 +26,7 @@ import app.models.portfolio_holding  # noqa: F401
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="금융·경제 인사이트 랩 API")
+app = FastAPI(title="황성준의 금융 인사이트 API")
 
 # FE/BE 분리: 정적 호스팅(S3/CloudFront 등)에서 서빙되는 프론트엔드가
 # 다른 오리진의 이 API 를 호출할 수 있도록 CORS 를 연다.
