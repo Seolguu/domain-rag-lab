@@ -1,8 +1,8 @@
 :root {
   --app-blue: #1455d9;
-  --app-ink: #0b2e5b;
-  --app-line: #d5e3fa;
-  --app-bg: #f4f8fe;
+  --app-ink: #eef1fb;
+  --app-line: #263050;
+  --app-bg: #0b1220;
 }
 body {
   background: var(--app-bg);
@@ -22,7 +22,7 @@ body {
   gap: 8px;
   height: 60px;
   padding: 0 22px;
-  background: #fff;
+  background: #141c30;
   border-bottom: 2px solid #dbe5f3;
   box-shadow: 0 2px 8px #143b7608;
 }
@@ -34,8 +34,8 @@ body {
   gap: 7px;
   padding: 8px 11px;
   color: #36506f;
-  background: #fff;
-  border: 1px solid #d7e2f0;
+  background: #141c30;
+  border: 1px solid #3a4770;
   border-radius: 5px;
   font: 700 14.5px inherit;
   text-decoration: none;
@@ -100,8 +100,8 @@ body {
   gap: 7px;
   padding: 8px 11px;
   color: #36506f;
-  background: #fff;
-  border: 1px solid #d7e2f0;
+  background: #141c30;
+  border: 1px solid #3a4770;
   border-radius: 5px;
   font: 700 14.5px inherit;
   white-space: nowrap;
@@ -110,12 +110,12 @@ body {
 .day-glossary-toggle:hover { color: var(--app-blue); border-color: #91b9f4; background: #eff6ff; }
 .glossary-drawer-backdrop { position: fixed; inset: 0; z-index: 45; background: #11274655; opacity: 0; pointer-events: none; transition: opacity .2s; }
 .glossary-drawer-backdrop.is-open { opacity: 1; pointer-events: auto; }
-.glossary-drawer { position: fixed; top: 0; right: 0; bottom: 0; z-index: 50; display: flex; flex-direction: column; width: min(430px, 92vw); padding: 25px 22px; overflow: auto; background: #fff; box-shadow: -12px 0 32px #142c552b; transform: translateX(105%); transition: transform .2s ease; }
+.glossary-drawer { position: fixed; top: 0; right: 0; bottom: 0; z-index: 50; display: flex; flex-direction: column; width: min(430px, 92vw); padding: 25px 22px; overflow: auto; background: #141c30; box-shadow: -12px 0 32px #142c552b; transform: translateX(105%); transition: transform .2s ease; }
 .glossary-drawer.is-open { transform: translateX(0); }
 .glossary-drawer header { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; padding-bottom: 16px; border-bottom: 1px solid var(--app-line); }
 .glossary-drawer header p { margin: 0 0 4px; color: var(--app-blue); font-size: 14.5px; font-weight: 800; letter-spacing: .09em; }
 .glossary-drawer h2 { margin: 0; color: var(--app-ink); font-size: 25px; }
-.glossary-drawer header button { display: grid; width: 35px; height: 35px; place-items: center; border: 1px solid #d7e2f0; border-radius: 50%; color: #214d7d; background: #fff; font: 700 24px/1 inherit; cursor: pointer; }
+.glossary-drawer header button { display: grid; width: 35px; height: 35px; place-items: center; border: 1px solid #3a4770; border-radius: 50%; color: #a5b4fc; background: #141c30; font: 700 24px/1 inherit; cursor: pointer; }
 .glossary-drawer-intro { margin: 15px 0; color: #5d7191; font-size: 14.5px; }
 .glossary-drawer-list { display: grid; gap: 8px; }
 .glossary-drawer-item { border: 1px solid #d8e5f7; border-radius: 9px; background: #fbfdff; }
@@ -134,7 +134,7 @@ body {
   width: min(360px, calc(100vw - 32px));
   padding: 0;
   overflow: hidden auto;
-  background: #fff;
+  background: #141c30;
   box-shadow: 12px 0 32px #142c552b;
   transform: translateX(-105%);
   transition: transform 0.2s ease;
@@ -144,7 +144,7 @@ body {
 }
 .day-offcanvas-header {
   padding: 19px 12px 23px;
-  border-bottom: 1px solid #d7e2f0;
+  border-bottom: 1px solid #3a4770;
 }
 .day-offcanvas-title-row {
   display: flex;
@@ -167,9 +167,9 @@ body {
   flex: 0 0 auto;
   place-items: center;
   color: #36506f;
-  border: 1px solid #d7e2f0;
+  border: 1px solid #3a4770;
   border-radius: 5px;
-  background: #fff;
+  background: #141c30;
   cursor: pointer;
 }
 .day-offcanvas-close:hover { color: var(--app-blue); border-color: #91b9f4; background: #eff6ff; }
@@ -206,7 +206,7 @@ body {
   text-decoration: none;
   border: 1px solid #d8e5f7;
   border-radius: 6px;
-  background: #fff;
+  background: #141c30;
   font-size: 14.5px;
   font-weight: 700;
 }
@@ -224,7 +224,7 @@ body {
   font-weight: 800;
 }
 .day-offcanvas .day-offcanvas-link.active { border-color: #b8d1f6; background: #f8fbff; }
-.day-offcanvas .day-offcanvas-link.active .day-offcanvas-day { color: #fff; background: var(--app-blue); }
+.day-offcanvas .day-offcanvas-link.active .day-offcanvas-day { color: #141c30; background: var(--app-blue); }
 .day-offcanvas-footer {
   display: grid;
   gap: 20px;
@@ -358,7 +358,7 @@ body > nav {
   max-height: calc(100vh - 48px);
   overflow: hidden;
   padding: 34px 38px;
-  background: #fff;
+  background: #141c30;
   border: 1px solid var(--app-line);
   border-radius: 14px;
   box-shadow: 0 24px 70px #071c4038;
@@ -369,8 +369,8 @@ body > nav {
   right: 14px;
   width: 34px;
   height: 34px;
-  color: #214d7d;
-  background: #fff;
+  color: #a5b4fc;
+  background: #141c30;
   border: 1px solid #cbdcf5;
   border-radius: 50%;
   font-size: 24.15px;
