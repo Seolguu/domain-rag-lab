@@ -2171,3 +2171,9 @@ input, select, textarea { color-scheme: dark; }
 .personal-schedule input { border-color: #3a4770; background: #0f1729; color: #eef1fb; }
 .personal-events span { background: #0f1729; color: #c3cbe0; }
 .simulation-header { background: linear-gradient(115deg, #171b3d, #111a30); }
+
+/* 시뮬레이션 결과 카드(밝은 amber 톤 유지하되 다크 배경에 맞게) */
+.scenario-result { background: #2a1f0f; }
+.scenario-result .scenario-breakdown span { background: rgba(255, 255, 255, .06); color: #c3cbe0; }
+.scenario-reasons { border-top-color: #4a3418; }
+.scenario-reason { border-top-color: rgba(251, 191, 36, .18); }
