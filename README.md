@@ -1,5 +1,24 @@
 # 금융상품·자산배분 RAG 에이전트
 
+## 📌 시험 통합 안내 — domain-rag-lab + investment-analysis
+
+이 저장소는 **[edumgt/investment-analysis](https://github.com/edumgt/investment-analysis)** 와 **[edumgt/domain-rag-lab](https://github.com/edumgt/domain-rag-lab)** 두 웹앱을 하나로 통합해, 본인만의 "금융·경제 인사이트 랩"으로 개편한 결과물입니다.
+
+- **원본 investment-analysis 전체**는 [`vendor/investment-analysis/`](vendor/investment-analysis) 에 그대로 포함되어 있습니다(통합 시점 스냅샷).
+- **이 저장소(domain-rag-lab)를 베이스**로 삼고, investment-analysis에서 아래 기능을 기능 단위로 이식했습니다.
+
+| 기능 | 원본 (`vendor/investment-analysis/`) | 이식 위치 |
+|---|---|---|
+| 퀀트 분석 (포트폴리오 시나리오·VaR/CVaR·MA 백테스트·효율적 프론티어) | `app/backend/routers/quant.py` | [`app/api/routes/quant.py`](app/api/routes/quant.py) |
+| 세금 시뮬레이션 (부가세·소득세·법인세) | `app/backend/routers/tax.py` | [`app/api/routes/tax.py`](app/api/routes/tax.py) |
+| 금융상식 퀴즈 20문항 | `quiz_questions.json` | [`frontend/assets/quiz-data.json`](frontend/assets/quiz-data.json) |
+
+domain-rag-lab 쪽에서는 배포 불가능하거나(LEAN SSH 백테스트) 시험 범위 밖인 RAG 챗봇/문서 인제스트를 제거하고, 위 기능과 **AWS Lambda + API Gateway 기반 예금·적금 이자 계산기**([`lambda/interest_calculator.py`](lambda/interest_calculator.py))를 추가해 메뉴를 재구성했습니다. 새 메뉴 구성: 홈 · 종목보기 · 퀀트분석 · 세금계산 · 이자계산기 · 시뮬레이션 · 베이시스 · 퀴즈 · 캘린더.
+
+배포: EC2 단일 컨테이너(`docker-compose.ec2.yml`, SQLite) + Elastic IP.
+
+---
+
 금융상품과 자산배분 방법론을 학습·탐색하기 위한 도메인 특화 RAG(Retrieval-Augmented Generation) 서비스입니다. 등록한 금융 문서를 근거로 주식·ETF·채권·파생상품의 구조와 위험을 설명하고, 포트폴리오 이론·성과지표·자산배분 모델을 대화형으로 검토합니다.
 
 ## 이 저장소의 의미
