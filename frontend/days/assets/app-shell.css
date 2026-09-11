@@ -504,3 +504,24 @@ body > nav {
     max-height: none;
   }
 }
+
+/* ─── 드롭다운 메뉴 그룹 (메인 SPA 헤더와 통일) ─────────────────────────── */
+.day-brand-nav-group { position: relative; display: inline-flex; }
+.day-brand-nav-trigger { display: inline-flex; align-items: center; gap: 6px; padding: 8px 10px; color: #c3cbe0; background: transparent; border: 1px solid transparent; border-radius: 5px; font: 700 14.5px inherit; cursor: pointer; white-space: nowrap; }
+.day-brand-nav-trigger:hover,
+.day-brand-nav-trigger.open,
+.day-brand-nav-group.has-active .day-brand-nav-trigger { color: #fff; background: #4f46e5; }
+.day-brand-nav-chev { font-size: 10px; transition: transform .15s ease; }
+.day-brand-nav-trigger.open .day-brand-nav-chev { transform: rotate(180deg); }
+.day-brand-nav-dropdown { display: none; position: fixed; flex-direction: column; gap: 2px; min-width: 200px; padding: 8px; background: #111a30; border: 1px solid #263050; border-radius: 12px; box-shadow: 0 16px 36px rgba(0, 0, 0, .5); z-index: 500; }
+.day-brand-nav-dropdown.open { display: flex; }
+.day-brand-nav-dropdown a { display: flex; align-items: center; gap: 9px; padding: 9px 12px; color: #c3cbe0; text-decoration: none; border-radius: 8px; font-size: 13.5px; font-weight: 700; white-space: nowrap; }
+.day-brand-nav-dropdown a:hover { background: #1c2244; color: #a5b4fc; }
+
+/* Safari 기본 파란 포커스 링 대신 테마에 맞는 인디고 링 */
+.day-panel-toggle:focus-visible,
+.day-login:focus-visible,
+.day-glossary-toggle:focus-visible,
+.day-brand-nav a:focus-visible,
+.day-brand-nav-trigger:focus-visible,
+.day-brand-nav-dropdown a:focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; border-radius: 5px; }

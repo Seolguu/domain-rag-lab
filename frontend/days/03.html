@@ -9,7 +9,7 @@
     />
     <title>03일차 | 4일 금융 이론 — 채권 · 코인</title>
     <link rel="stylesheet" href="assets/site.css?v=20260906-understanding-check" />
-    <link rel="stylesheet" href="assets/app-shell.css?v=20260908-modal-text105" />
+    <link rel="stylesheet" href="assets/app-shell.css?v=20260911-dropdown-nav" />
     <script src="https://cdn.jsdelivr.net/npm/apexcharts@7.1.0"></script>
     <style>
       /* 옵션 학습 단원은 01일차로 이동했습니다. */
@@ -127,6 +127,7 @@
     <script defer src="assets/glossary-modal.js?v=20260909-approximation-example"></script>
     <script defer src="assets/glossary-drawer.js?v=20260906-system-terms"></script>
     <script defer src="assets/lesson-understanding.js?v=20260906-all-days"></script>
+    <script defer src="assets/day-nav.js?v=20260911-dark"></script>
     <script>window.API_BASE_URL = window.API_BASE_URL || "";</script>
 
     <script src="../config.js?v=20260910-fe-be-split"></script>
@@ -149,21 +150,24 @@
         role="navigation"
         aria-label="학습 서비스 메뉴"
       >
-        <a href="/?view=home"><i class="fa-solid fa-house"></i> 홈</a
-        ><a href="/?view=stocks"
-          ><i class="fa-solid fa-building-columns"></i> 종목보기</a
-        ><a href="/?view=quant"><i class="fa-solid fa-flask"></i> 퀀트분석</a
-        ><a href="/?view=tax"
-          ><i class="fa-solid fa-receipt"></i> 세금계산</a
-        ><a href="/?view=interest"
-          ><i class="fa-solid fa-piggy-bank"></i> 이자계산기</a
-        ><a href="/?view=portfolio"
-          ><i class="fa-solid fa-briefcase"></i> 내 포트폴리오</a
-        ><a href="/?view=quiz"
-          ><i class="fa-solid fa-circle-question"></i> 퀴즈</a
-        ><a href="/?view=calendar"
-          ><i class="fa-solid fa-calendar-days"></i> 캘린더</a
-        >
+        <a href="/?view=home"><i class="fa-solid fa-house"></i> 홈</a>
+        <div class="day-brand-nav-group">
+          <button class="day-brand-nav-trigger" type="button"><i class="fa-solid fa-magnifying-glass-chart"></i> 시장 데이터 <i class="fa-solid fa-chevron-down day-brand-nav-chev"></i></button>
+          <div class="day-brand-nav-dropdown">
+            <a href="/?view=stocks"><i class="fa-solid fa-building-columns"></i> 종목보기</a>
+            <a href="/?view=calendar"><i class="fa-solid fa-calendar-days"></i> 캘린더</a>
+          </div>
+        </div>
+        <div class="day-brand-nav-group">
+          <button class="day-brand-nav-trigger" type="button"><i class="fa-solid fa-flask-vial"></i> 퀀트·세무 <i class="fa-solid fa-chevron-down day-brand-nav-chev"></i></button>
+          <div class="day-brand-nav-dropdown">
+            <a href="/?view=quant"><i class="fa-solid fa-flask"></i> 퀀트분석</a>
+            <a href="/?view=tax"><i class="fa-solid fa-receipt"></i> 세금계산</a>
+            <a href="/?view=interest"><i class="fa-solid fa-piggy-bank"></i> 이자계산기</a>
+          </div>
+        </div>
+        <a href="/?view=portfolio"><i class="fa-solid fa-briefcase"></i> 내 포트폴리오</a>
+        <a href="/?view=quiz"><i class="fa-solid fa-circle-question"></i> 퀴즈</a>
       </div>
       <div class="day-header-actions"></div>
     </header>
